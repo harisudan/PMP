@@ -1,0 +1,996 @@
+name           Simple_hand
+
+nq             16
+nv             15
+nu             9
+na             0
+njnt           10
+nbody          7
+ngeom          14
+ncpair         0
+nmesh          0
+nmeshvert      0
+nmeshface      0
+nmeshgraph     0
+nhfield        0
+nhfielddata    0
+nsite          0
+ncam           0
+neq            0
+ntendon        0
+nwrap          0
+ncustom        0
+ncustomdata    0
+ntext          0
+ntextdata      0
+nnames         407
+nM             65
+nemax          0
+nlmax          100
+ncmax          35
+njmax          100
+nctotmax       35
+nbody_user     0
+njnt_user      1
+ngeom_user     0
+nsite_user     1
+ncam_user      0
+neq_user       0
+ntendon_user   0
+nactuator_user 0
+nstack         12846
+nuserdata      0
+nbuffer        11456
+
+timestep        0.01    
+gravity         0         0         0       
+wind            0         0         0       
+density         0       
+viscosity       0       
+expdist         10      
+s_mindist       0         1        
+s_stiffness     0         1        
+s_damping       0         1        
+s_armature      0         1        
+s_friction      0         1        
+s_frictionloss  0         1        
+s_compliance    1         1        
+s_timeconst     0         1        
+disableflags   512
+integrator     2
+collisionmode  0
+eqsoft         0
+fastdiag       0
+remotecontact  0
+stats          0
+algorithm      2
+iterations     20
+
+qpos0           0         0         0         0         0         0         0         0         0         0.25      0         0.1       0.87     -0.5       0         0        
+
+qpos_spring     0         0         0         0         0         0         0         0         0         0.25      0         0.1       0.87     -0.5       0         0        
+
+
+BODY 0:
+  name         world
+  parentid     0
+  rootid       0
+  weldid       0
+  jntnum       0
+  jntadr       -1
+  dofnum       0
+  dofadr       -1
+  geomnum      2
+  geomadr      0
+  pos           0         0         0       
+  quat          1         0         0         0       
+  ipos          0         0         0       
+  iquat         1         0         0         0       
+  mass          0       
+  inertia       0         0         0       
+  invweight0    0         0       
+
+BODY 1:
+  name         upperarm
+  parentid     0
+  rootid       1
+  weldid       1
+  jntnum       3
+  jntadr       0
+  dofnum       3
+  dofadr       0
+  geomnum      1
+  geomadr      2
+  pos          -0.15      0         0.45    
+  quat          1         0         0         0       
+  ipos          0         0        -0.17    
+  iquat         1         0         0         0       
+  mass          3.1     
+  inertia       0.042     0.042     0.0039  
+  invweight0    0.052     4.3     
+
+BODY 2:
+  name         forearm
+  parentid     1
+  rootid       1
+  weldid       2
+  jntnum       2
+  jntadr       3
+  dofnum       2
+  dofadr       3
+  geomnum      1
+  geomadr      3
+  pos           0         0        -0.36    
+  quat          1         0         0         0       
+  ipos          0.11      0         0       
+  iquat         0.71      0        -0.71      0       
+  mass          1       
+  inertia       0.0059    0.0059    0.00061 
+  invweight0    0.27      9.5     
+
+BODY 3:
+  name         claw
+  parentid     2
+  rootid       1
+  weldid       3
+  jntnum       2
+  jntadr       5
+  dofnum       2
+  dofadr       5
+  geomnum      1
+  geomadr      4
+  pos           0.27      0         0       
+  quat          1         0         0         0       
+  ipos          0         0         0       
+  iquat         0.71     -0.71      0         0       
+  mass          0.016   
+  inertia       3.7e-006  3.7e-006  7.9e-007
+  invweight0    0.58      16      
+
+BODY 4:
+  name         rightclaw
+  parentid     3
+  rootid       1
+  weldid       4
+  jntnum       1
+  jntadr       7
+  dofnum       1
+  dofadr       7
+  geomnum      4
+  geomadr      5
+  pos           0.01     -0.02      0       
+  quat          1         0         0         0       
+  ipos          0.034    -0.01     -4.8e-019
+  iquat         0.49      0.49      0.51      0.51    
+  mass          0.014   
+  inertia       9.6e-006  6.9e-006  4e-006  
+  invweight0    0.74      19      
+
+BODY 5:
+  name         leftclaw
+  parentid     3
+  rootid       1
+  weldid       5
+  jntnum       1
+  jntadr       8
+  dofnum       1
+  dofadr       8
+  geomnum      4
+  geomadr      9
+  pos           0.01      0.02      0       
+  quat          1         0         0         0       
+  ipos          0.034     0.01     -4.8e-019
+  iquat         0.51      0.51      0.49      0.49    
+  mass          0.014   
+  inertia       9.6e-006  6.9e-006  4e-006  
+  invweight0    0.74      19      
+
+BODY 6:
+  name         object
+  parentid     0
+  rootid       6
+  weldid       6
+  jntnum       1
+  jntadr       9
+  dofnum       6
+  dofadr       9
+  geomnum      1
+  geomadr      13
+  pos           0.25      0         0.1     
+  quat          0.87     -0.5       0         0       
+  ipos          0         0         0       
+  iquat         1         0         0         0       
+  mass          0.19    
+  inertia       0.00017   0.00017   5.8e-005
+  invweight0    3.4       9.1     
+
+
+JOINT 0:
+  name         s_abduction
+  type         3
+  islimited    1
+  qposadr      0
+  dofadr       0
+  bodyid       1
+  pos           0         0         0       
+  axis          1         0         0       
+  stiffness     0       
+  range        -0.7       0.7     
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 1:
+  name         s_flexion
+  type         3
+  islimited    1
+  qposadr      1
+  dofadr       1
+  bodyid       1
+  pos           0         0         0       
+  axis          0        -1         0       
+  stiffness     0       
+  range        -0.87      0.87    
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 2:
+  name         s_rotation
+  type         3
+  islimited    1
+  qposadr      2
+  dofadr       2
+  bodyid       1
+  pos           0         0         0       
+  axis          0         0         1       
+  stiffness     0       
+  range        -0.87      0.87    
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 3:
+  name         e_flexion
+  type         3
+  islimited    1
+  qposadr      3
+  dofadr       3
+  bodyid       2
+  pos           0         0         0       
+  axis          0        -1         0       
+  stiffness     0       
+  range        -1         1       
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 4:
+  name         e_pronation
+  type         3
+  islimited    1
+  qposadr      4
+  dofadr       4
+  bodyid       2
+  pos           0         0         0       
+  axis         -1         0         0       
+  stiffness     0       
+  range        -1.6       1.6     
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 5:
+  name         w_abduction
+  type         3
+  islimited    1
+  qposadr      5
+  dofadr       5
+  bodyid       3
+  pos           0         0         0       
+  axis          0         0         1       
+  stiffness     0       
+  range        -0.52      0.52    
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 6:
+  name         w_flexion
+  type         3
+  islimited    1
+  qposadr      6
+  dofadr       6
+  bodyid       3
+  pos           0         0         0       
+  axis          0        -1         0       
+  stiffness     0       
+  range        -1         1       
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 7:
+  name         rc_close
+  type         3
+  islimited    1
+  qposadr      7
+  dofadr       7
+  bodyid       4
+  pos           0         0         0       
+  axis          0         0         1       
+  stiffness     0       
+  range        -1         1       
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 8:
+  name         lc_close
+  type         3
+  islimited    1
+  qposadr      8
+  dofadr       8
+  bodyid       5
+  pos           0         0         0       
+  axis          0         0         1       
+  stiffness     0       
+  range        -1         1       
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+JOINT 9:
+  name         fr
+  type         0
+  islimited    0
+  qposadr      9
+  dofadr       9
+  bodyid       6
+  pos           0         0         0       
+  axis          0         0         1       
+  stiffness     0       
+  range         0         0       
+  compliance    0.01    
+  timeconst     0.01    
+  mindist       0.01    
+  userdata      0        
+
+
+DOF 0:
+  isfrictional  0
+  bodyid       1
+  jntid        0
+  parentid     -1
+  Madr         0
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    2.7     
+
+DOF 1:
+  isfrictional  0
+  bodyid       1
+  jntid        1
+  parentid     0
+  Madr         1
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    2.5     
+
+DOF 2:
+  isfrictional  0
+  bodyid       1
+  jntid        2
+  parentid     1
+  Madr         3
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    7.6     
+
+DOF 3:
+  isfrictional  0
+  bodyid       2
+  jntid        3
+  parentid     2
+  Madr         6
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    7.6     
+
+DOF 4:
+  isfrictional  0
+  bodyid       2
+  jntid        4
+  parentid     3
+  Madr         10
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    9       
+
+DOF 5:
+  isfrictional  0
+  bodyid       3
+  jntid        5
+  parentid     4
+  Madr         15
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    9.1     
+
+DOF 6:
+  isfrictional  0
+  bodyid       3
+  jntid        6
+  parentid     5
+  Madr         21
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    9.1     
+
+DOF 7:
+  isfrictional  0
+  bodyid       4
+  jntid        7
+  parentid     6
+  Madr         28
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    9.1     
+
+DOF 8:
+  isfrictional  0
+  bodyid       5
+  jntid        8
+  parentid     6
+  Madr         36
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    9.1     
+
+DOF 9:
+  isfrictional  0
+  bodyid       6
+  jntid        9
+  parentid     -1
+  Madr         44
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    3.4     
+
+DOF 10:
+  isfrictional  0
+  bodyid       6
+  jntid        9
+  parentid     9
+  Madr         45
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    3.4     
+
+DOF 11:
+  isfrictional  0
+  bodyid       6
+  jntid        9
+  parentid     10
+  Madr         47
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    3.4     
+
+DOF 12:
+  isfrictional  0
+  bodyid       6
+  jntid        9
+  parentid     11
+  Madr         50
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    9.1     
+
+DOF 13:
+  isfrictional  0
+  bodyid       6
+  jntid        9
+  parentid     12
+  Madr         54
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    9.1     
+
+DOF 14:
+  isfrictional  0
+  bodyid       6
+  jntid        9
+  parentid     13
+  Madr         59
+  armature      0.1     
+  damping       1       
+  frictionloss  0       
+  maxvel        10      
+  invweight0    9.1     
+
+
+GEOM 0:
+  name         tableTop
+  type         0
+  contype      1
+  conaffinity  1
+  condim       3
+  bodyid       0
+  dataid       -1
+  group        0
+  size          0.6       0.6       0.5     
+  rbound        0       
+  pos           0.15      0         0       
+  quat          1         0         0         0       
+  rgba          0.6       0.6       0.5       1       
+  friction      1         0.1       0.1     
+  compliance    0.01    
+  timeconst     0.05    
+  mindist       0.01    
+
+GEOM 1:
+  name         target
+  type         3
+  contype      0
+  conaffinity  0
+  condim       3
+  bodyid       0
+  dataid       -1
+  group        0
+  size          0.025     0.035     0       
+  rbound        0.06    
+  pos           0.17      0.2       0.15    
+  quat          0.85     -0.51     -0.13      0       
+  rgba          0.5       0.9       0.6       0.2     
+  friction      1         0.1       0.1     
+  compliance    0.01    
+  timeconst     0.05    
+  mindist       0.01    
+
+GEOM 2:
+  name         
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       1
+  dataid       -1
+  group        0
+  size          0.05      0.17      0       
+  rbound        0.22    
+  pos           0         0        -0.17    
+  quat          1         0         0         0       
+  rgba          0.9       0.5       0.8       0.8     
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 3:
+  name         
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       2
+  dataid       -1
+  group        0
+  size          0.035     0.11      0       
+  rbound        0.15    
+  pos           0.11      0         0       
+  quat          0.71      0        -0.71      0       
+  rgba          0.9       0.5       0.8       0.8     
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 4:
+  name         Geomclaw
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       3
+  dataid       -1
+  group        0
+  size          0.01      0.02      0       
+  rbound        0.03    
+  pos           0         0         0       
+  quat          0.71     -0.71      0         0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 5:
+  name         rightclaw_it
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       4
+  dataid       -1
+  group        0
+  size          0.005     0.018     0       
+  rbound        0.023   
+  pos           0.015    -0.01      0.015   
+  quat          0.71     -0.39     -0.59      0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 6:
+  name         rightclaw_ot
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       4
+  dataid       -1
+  group        0
+  size          0.005     0.022     0       
+  rbound        0.027   
+  pos           0.05     -0.01      0.015   
+  quat          0.71      0.32     -0.63      0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 7:
+  name         rightclaw_ib
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       4
+  dataid       -1
+  group        0
+  size          0.005     0.018     0       
+  rbound        0.023   
+  pos           0.015    -0.01     -0.015   
+  quat          0.71     -0.39     -0.59      0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 8:
+  name         rightclaw_ob
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       4
+  dataid       -1
+  group        0
+  size          0.005     0.022     0       
+  rbound        0.027   
+  pos           0.05     -0.01     -0.015   
+  quat          0.71      0.32     -0.63      0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 9:
+  name         leftclaw_it
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       5
+  dataid       -1
+  group        0
+  size          0.005     0.018     0       
+  rbound        0.023   
+  pos           0.015     0.01      0.015   
+  quat          0.71      0.39     -0.59      0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 10:
+  name         leftclaw_ot
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       5
+  dataid       -1
+  group        0
+  size          0.005     0.022     0       
+  rbound        0.027   
+  pos           0.05      0.01      0.015   
+  quat          0.71     -0.32     -0.63      0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 11:
+  name         leftclaw_ib
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       5
+  dataid       -1
+  group        0
+  size          0.005     0.018     0       
+  rbound        0.023   
+  pos           0.015     0.01     -0.015   
+  quat          0.71      0.39     -0.59      0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 12:
+  name         leftclaw_ob
+  type         3
+  contype      1
+  conaffinity  0
+  condim       3
+  bodyid       5
+  dataid       -1
+  group        0
+  size          0.005     0.022     0       
+  rbound        0.027   
+  pos           0.05      0.01     -0.015   
+  quat          0.71     -0.32     -0.63      0       
+  rgba          0.65      0.5       0.8       1       
+  friction      1         0.1       0.1     
+  compliance    0.0001  
+  timeconst     0.01    
+  mindist       0.01    
+
+GEOM 13:
+  name         geom_object
+  type         3
+  contype      1
+  conaffinity  1
+  condim       3
+  bodyid       6
+  dataid       -1
+  group        0
+  size          0.025     0.035     0       
+  rbound        0.06    
+  pos           0         0         0       
+  quat          1         0         0         0       
+  rgba          0.5       0.6       0.8       0.65    
+  friction      1         0.1       0.1     
+  compliance    0.01    
+  timeconst     0.05    
+  mindist       0.01    
+
+
+
+
+
+
+
+
+
+ACTUATOR 0:
+  name         As_abduction
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       1e+002    0         0         0         0        
+  biasprm       0        -1e+002    0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    2.7     
+  length0       0       
+  lengthrange   0         0       
+
+ACTUATOR 1:
+  name         As_flexion
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       1e+002    0         0         0         0        
+  biasprm       0        -1e+002    0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    2.5     
+  length0       0       
+  lengthrange   0         0       
+
+ACTUATOR 2:
+  name         As_rotation
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       1e+002    0         0         0         0        
+  biasprm       0        -1e+002    0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    7.6     
+  length0       0       
+  lengthrange   0         0       
+
+ACTUATOR 3:
+  name         Ae_flexion
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       70        0         0         0         0        
+  biasprm       0        -70        0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    7.6     
+  length0       0       
+  lengthrange   0         0       
+
+ACTUATOR 4:
+  name         Ae_pronation
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       70        0         0         0         0        
+  biasprm       0        -70        0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    9       
+  length0       0       
+  lengthrange   0         0       
+
+ACTUATOR 5:
+  name         Aw_abduction
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       30        0         0         0         0        
+  biasprm       0        -30        0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    9.1     
+  length0       0       
+  lengthrange   0         0       
+
+ACTUATOR 6:
+  name         Aw_flexion
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       30        0         0         0         0        
+  biasprm       0        -30        0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    9.1     
+  length0       0       
+  lengthrange   0         0       
+
+ACTUATOR 7:
+  name         Arc_close
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       10        0         0         0         0        
+  biasprm       0        -10        0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    9.1     
+  length0       0       
+  lengthrange   0         0       
+
+ACTUATOR 8:
+  name         Alc_close
+  dyntype      0
+  trntype      0
+  gaintype     0
+  biastype     1
+  isctrllimited  0
+  isforcelimited 0
+  dynprm        0         0         0         0         0         0         0         0         0         0        
+  trnprm        1        
+  gainprm       10        0         0         0         0        
+  biasprm       0        -10        0        
+  ctrlrange     0         0       
+
+  forcerange    0         0       
+  invweight0    9.1     
+  length0       0       
+  lengthrange   0         0       
+
+
+
