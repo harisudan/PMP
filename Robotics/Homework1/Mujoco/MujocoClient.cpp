@@ -336,202 +336,202 @@ void main(void)
 			// Step 5 - Take object, manouvre combined position and orientation control to move towards target GREEN marker.
 			// ----------------------------------------------------------------------------------------
 			
-			//Vector rdelta;
-			//rdelta = quatdiff(r, rhatObject);
+			Vector rdelta;
+			rdelta = quatdiff(r, rhatObject);
 
-			//switch (stateMachine)
-			//{
-			//	case Default:
-			//		stateMachine = AlignPerpendicularToObject;
-			//		break;
-			//}
+			switch (stateMachine)
+			{
+				case Default:
+					stateMachine = AlignPerpendicularToObject;
+					break;
+			}
 
-			//if (rdelta[0] == 0.0 && stateMachine == AlignPerpendicularToObject)
-			//{
-			//	stateMachine = ApproachingObject;
-			//}
-			//else if (stateMachine == AlignPerpendicularToObject)
-			//{
-			//	// Continue with orientation control to complete step 1
-			//	// 
-			//	Matrix Jrottransponse = Jrot.transpose();
-			//	float alpha2 = 0.01;
-			//	Matrix JHash = Jrottransponse * ((Jrot * Jrottransponse).inverse());
-			//	Matrix JHashJ = JHash * Jrot;
-			//	Matrix Intermediate1 = I - JHashJ;
-			//	Vector Intermediate2 = ZeroVector - theta;
-			//	Vector RightTerm = Intermediate1 * Intermediate2;
-			//	Vector LeftTerm = (JHash * rdelta) * alpha2;
-			//	Vector deltaTheta = LeftTerm + RightTerm;
-			//	thetahat = deltaTheta + theta;
-			//}
-			//else if (stateMachine == ApproachingObject)
-			//{
-			//	Vector rDelta = quatdiff(r, rhatObject);
-			//	Vector xdelta = xhatObject - x;
+			if (rdelta[0] == 0.0 && stateMachine == AlignPerpendicularToObject)
+			{
+				stateMachine = ApproachingObject;
+			}
+			else if (stateMachine == AlignPerpendicularToObject)
+			{
+				// Continue with orientation control to complete step 1
+				// 
+				Matrix Jrottransponse = Jrot.transpose();
+				float alpha2 = 0.01;
+				Matrix JHash = Jrottransponse * ((Jrot * Jrottransponse).inverse());
+				Matrix JHashJ = JHash * Jrot;
+				Matrix Intermediate1 = I - JHashJ;
+				Vector Intermediate2 = ZeroVector - theta;
+				Vector RightTerm = Intermediate1 * Intermediate2;
+				Vector LeftTerm = (JHash * rdelta) * alpha2;
+				Vector deltaTheta = LeftTerm + RightTerm;
+				thetahat = deltaTheta + theta;
+			}
+			else if (stateMachine == ApproachingObject)
+			{
+				Vector rDelta = quatdiff(r, rhatObject);
+				Vector xdelta = xhatObject - x;
 
-			//	if (xdelta[0] < 0.11)
-			//	{
-			//		stateMachine = OpenGrip;
-			//	}
-			//	else
-			//	{
-			//		Vector ConcatenatedXRDelta(xdelta.getSize() + rDelta.getSize());
-			//		ConcatenatedXRDelta[0] = xdelta[0];
-			//		ConcatenatedXRDelta[1] = xdelta[1];
-			//		ConcatenatedXRDelta[2] = xdelta[2];
-			//		ConcatenatedXRDelta[3] = rDelta[0];
-			//		ConcatenatedXRDelta[4] = rDelta[1];
-			//		ConcatenatedXRDelta[5] = rDelta[2];
-			//		assert(Jrot.getNumCols() == Jpos.getNumCols());
-			//		assert(Jrot.getNumRows() == Jpos.getNumRows());
-			//		Matrix ConcatenatedJacobMatrix(Jpos.getNumRows() + Jrot.getNumRows(), Jpos.getNumCols());
+				if (xdelta[0] < 0.11)
+				{
+					stateMachine = OpenGrip;
+				}
+				else
+				{
+					Vector ConcatenatedXRDelta(xdelta.getSize() + rDelta.getSize());
+					ConcatenatedXRDelta[0] = xdelta[0];
+					ConcatenatedXRDelta[1] = xdelta[1];
+					ConcatenatedXRDelta[2] = xdelta[2];
+					ConcatenatedXRDelta[3] = rDelta[0];
+					ConcatenatedXRDelta[4] = rDelta[1];
+					ConcatenatedXRDelta[5] = rDelta[2];
+					assert(Jrot.getNumCols() == Jpos.getNumCols());
+					assert(Jrot.getNumRows() == Jpos.getNumRows());
+					Matrix ConcatenatedJacobMatrix(Jpos.getNumRows() + Jrot.getNumRows(), Jpos.getNumCols());
 
-			//		int i = 0, j = 0;
-			//		for (i = 0; i < Jpos.getNumRows(); i++)
-			//		{
-			//			ConcatenatedJacobMatrix.setRow(i, Jpos.getRow(i));
-			//		}
+					int i = 0, j = 0;
+					for (i = 0; i < Jpos.getNumRows(); i++)
+					{
+						ConcatenatedJacobMatrix.setRow(i, Jpos.getRow(i));
+					}
 
-			//		assert(i == Jpos.getNumRows());
+					assert(i == Jpos.getNumRows());
 
-			//		for (j = 0; j < Jrot.getNumRows(); j++)
-			//		{
-			//			ConcatenatedJacobMatrix.setRow(i + j, Jrot.getRow(j));
-			//		}
+					for (j = 0; j < Jrot.getNumRows(); j++)
+					{
+						ConcatenatedJacobMatrix.setRow(i + j, Jrot.getRow(j));
+					}
 
-			//		assert(j == Jrot.getNumRows());
-			//		
-			//		Matrix JConcatTranspose = ConcatenatedJacobMatrix.transpose();
-			//		float alpha5 = 0.006;
-			//		Matrix JHash = JConcatTranspose * ((ConcatenatedJacobMatrix * JConcatTranspose).inverse());
-			//		Matrix JHashJ = JHash * ConcatenatedJacobMatrix;
-			//		Matrix Intermediate1 = I - JHashJ;
-			//		Vector Intermediate2 = ZeroVector - theta;
-			//		Vector RightTerm = Intermediate1 * Intermediate2;
-			//		Vector LeftTerm = (JHash * ConcatenatedXRDelta) * alpha5;
-			//		Vector deltaTheta = LeftTerm + RightTerm;
-			//		thetahat = deltaTheta + theta;
-			//	}
-			//}
-			//else if (stateMachine == MoveTowardsTarget)
-			//{
-			//	Vector rDelta = quatdiff(rhatObject, rhat);
-			//	Vector xdelta = xhat - xhatObject;
+					assert(j == Jrot.getNumRows());
+					
+					Matrix JConcatTranspose = ConcatenatedJacobMatrix.transpose();
+					float alpha5 = 0.006;
+					Matrix JHash = JConcatTranspose * ((ConcatenatedJacobMatrix * JConcatTranspose).inverse());
+					Matrix JHashJ = JHash * ConcatenatedJacobMatrix;
+					Matrix Intermediate1 = I - JHashJ;
+					Vector Intermediate2 = ZeroVector - theta;
+					Vector RightTerm = Intermediate1 * Intermediate2;
+					Vector LeftTerm = (JHash * ConcatenatedXRDelta) * alpha5;
+					Vector deltaTheta = LeftTerm + RightTerm;
+					thetahat = deltaTheta + theta;
+				}
+			}
+			else if (stateMachine == MoveTowardsTarget)
+			{
+				Vector rDelta = quatdiff(rhatObject, rhat);
+				Vector xdelta = xhat - xhatObject;
 
-			//	Vector ConcatenatedXRDelta(xdelta.getSize() + rDelta.getSize());
-			//	ConcatenatedXRDelta[0] = xdelta[0];
-			//	ConcatenatedXRDelta[1] = xdelta[1];
-			//	ConcatenatedXRDelta[2] = xdelta[2];
-			//	ConcatenatedXRDelta[3] = rDelta[0];
-			//	ConcatenatedXRDelta[4] = rDelta[1];
-			//	ConcatenatedXRDelta[5] = rDelta[2];
-			//	assert(Jrot.getNumCols() == Jpos.getNumCols());
-			//	assert(Jrot.getNumRows() == Jpos.getNumRows());
-			//	Matrix ConcatenatedJacobMatrix(Jpos.getNumRows() + Jrot.getNumRows(), Jpos.getNumCols());
+				Vector ConcatenatedXRDelta(xdelta.getSize() + rDelta.getSize());
+				ConcatenatedXRDelta[0] = xdelta[0];
+				ConcatenatedXRDelta[1] = xdelta[1];
+				ConcatenatedXRDelta[2] = xdelta[2];
+				ConcatenatedXRDelta[3] = rDelta[0];
+				ConcatenatedXRDelta[4] = rDelta[1];
+				ConcatenatedXRDelta[5] = rDelta[2];
+				assert(Jrot.getNumCols() == Jpos.getNumCols());
+				assert(Jrot.getNumRows() == Jpos.getNumRows());
+				Matrix ConcatenatedJacobMatrix(Jpos.getNumRows() + Jrot.getNumRows(), Jpos.getNumCols());
 
-			//	int i = 0, j = 0;
-			//	for (i = 0; i < Jpos.getNumRows(); i++)
-			//	{
-			//		ConcatenatedJacobMatrix.setRow(i, Jpos.getRow(i));
-			//	}
+				int i = 0, j = 0;
+				for (i = 0; i < Jpos.getNumRows(); i++)
+				{
+					ConcatenatedJacobMatrix.setRow(i, Jpos.getRow(i));
+				}
 
-			//	assert(i == Jpos.getNumRows());
+				assert(i == Jpos.getNumRows());
 
-			//	for (j = 0; j < Jrot.getNumRows(); j++)
-			//	{
-			//		ConcatenatedJacobMatrix.setRow(i + j, Jrot.getRow(j));
-			//	}
+				for (j = 0; j < Jrot.getNumRows(); j++)
+				{
+					ConcatenatedJacobMatrix.setRow(i + j, Jrot.getRow(j));
+				}
 
-			//	assert(j == Jrot.getNumRows());
-			//	
-			//	Matrix JConcatTranspose = ConcatenatedJacobMatrix.transpose();
-			//	float alpha5 = 0.001;
-			//	Matrix JHash = JConcatTranspose * ((ConcatenatedJacobMatrix * JConcatTranspose).inverse());
-			//	Matrix JHashJ = JHash * ConcatenatedJacobMatrix;
-			//	Matrix Intermediate1 = I - JHashJ;
-			//	Vector Intermediate2 = ZeroVector - theta;
-			//	Vector RightTerm = Intermediate1 * Intermediate2;
-			//	Vector LeftTerm = (JHash * ConcatenatedXRDelta) * alpha5;
-			//	Vector deltaTheta = LeftTerm + RightTerm;
-			//	thetahat = deltaTheta + theta;
-			//}
-			//else if (stateMachine == OpenGrip)
-			//{
-			//	Vector rDelta = quatdiff(r, rhatObject);
-			//	Vector xdelta = xhatObject - x;
+				assert(j == Jrot.getNumRows());
+				
+				Matrix JConcatTranspose = ConcatenatedJacobMatrix.transpose();
+				float alpha5 = 0.001;
+				Matrix JHash = JConcatTranspose * ((ConcatenatedJacobMatrix * JConcatTranspose).inverse());
+				Matrix JHashJ = JHash * ConcatenatedJacobMatrix;
+				Matrix Intermediate1 = I - JHashJ;
+				Vector Intermediate2 = ZeroVector - theta;
+				Vector RightTerm = Intermediate1 * Intermediate2;
+				Vector LeftTerm = (JHash * ConcatenatedXRDelta) * alpha5;
+				Vector deltaTheta = LeftTerm + RightTerm;
+				thetahat = deltaTheta + theta;
+			}
+			else if (stateMachine == OpenGrip)
+			{
+				Vector rDelta = quatdiff(r, rhatObject);
+				Vector xdelta = xhatObject - x;
 
-			//	if (xdelta[0] < 0.036)
-			//	{
-			//		stateMachine = CloseGrip;
-			//	}
-			//	else
-			//	{
-			//		Vector ConcatenatedXRDelta(xdelta.getSize() + rDelta.getSize());
-			//		ConcatenatedXRDelta[0] = xdelta[0];
-			//		ConcatenatedXRDelta[1] = xdelta[1];
-			//		ConcatenatedXRDelta[2] = xdelta[2];
-			//		ConcatenatedXRDelta[3] = rDelta[0];
-			//		ConcatenatedXRDelta[4] = rDelta[1];
-			//		ConcatenatedXRDelta[5] = rDelta[2];
-			//		assert(Jrot.getNumCols() == Jpos.getNumCols());
-			//		assert(Jrot.getNumRows() == Jpos.getNumRows());
-			//		Matrix ConcatenatedJacobMatrix(Jpos.getNumRows() + Jrot.getNumRows(), Jpos.getNumCols());
+				if (xdelta[0] < 0.036)
+				{
+					stateMachine = CloseGrip;
+				}
+				else
+				{
+					Vector ConcatenatedXRDelta(xdelta.getSize() + rDelta.getSize());
+					ConcatenatedXRDelta[0] = xdelta[0];
+					ConcatenatedXRDelta[1] = xdelta[1];
+					ConcatenatedXRDelta[2] = xdelta[2];
+					ConcatenatedXRDelta[3] = rDelta[0];
+					ConcatenatedXRDelta[4] = rDelta[1];
+					ConcatenatedXRDelta[5] = rDelta[2];
+					assert(Jrot.getNumCols() == Jpos.getNumCols());
+					assert(Jrot.getNumRows() == Jpos.getNumRows());
+					Matrix ConcatenatedJacobMatrix(Jpos.getNumRows() + Jrot.getNumRows(), Jpos.getNumCols());
 
-			//		int i = 0, j = 0;
-			//		for (i = 0; i < Jpos.getNumRows(); i++)
-			//		{
-			//			ConcatenatedJacobMatrix.setRow(i, Jpos.getRow(i));
-			//		}
+					int i = 0, j = 0;
+					for (i = 0; i < Jpos.getNumRows(); i++)
+					{
+						ConcatenatedJacobMatrix.setRow(i, Jpos.getRow(i));
+					}
 
-			//		assert(i == Jpos.getNumRows());
+					assert(i == Jpos.getNumRows());
 
-			//		for (j = 0; j < Jrot.getNumRows(); j++)
-			//		{
-			//			ConcatenatedJacobMatrix.setRow(i + j, Jrot.getRow(j));
-			//		}
+					for (j = 0; j < Jrot.getNumRows(); j++)
+					{
+						ConcatenatedJacobMatrix.setRow(i + j, Jrot.getRow(j));
+					}
 
-			//		assert(j == Jrot.getNumRows());
-			//		
-			//		Matrix JConcatTranspose = ConcatenatedJacobMatrix.transpose();
-			//		float alpha5 = 0.00004;
-			//		Matrix JHash = JConcatTranspose * ((ConcatenatedJacobMatrix * JConcatTranspose).inverse());
-			//		Matrix JHashJ = JHash * ConcatenatedJacobMatrix;
-			//		Matrix Intermediate1 = I - JHashJ;
-			//		Vector Intermediate2 = ZeroVector - theta;
-			//		Vector RightTerm = Intermediate1 * Intermediate2;
-			//		Vector LeftTerm = (JHash * ConcatenatedXRDelta) * alpha5;
-			//		Vector deltaTheta = LeftTerm + RightTerm;
-			//		thetahat = deltaTheta + theta;
-			//	}
-			//}
+					assert(j == Jrot.getNumRows());
+					
+					Matrix JConcatTranspose = ConcatenatedJacobMatrix.transpose();
+					float alpha5 = 0.00004;
+					Matrix JHash = JConcatTranspose * ((ConcatenatedJacobMatrix * JConcatTranspose).inverse());
+					Matrix JHashJ = JHash * ConcatenatedJacobMatrix;
+					Matrix Intermediate1 = I - JHashJ;
+					Vector Intermediate2 = ZeroVector - theta;
+					Vector RightTerm = Intermediate1 * Intermediate2;
+					Vector LeftTerm = (JHash * ConcatenatedXRDelta) * alpha5;
+					Vector deltaTheta = LeftTerm + RightTerm;
+					thetahat = deltaTheta + theta;
+				}
+			}
 
-			//if (stateMachine == OpenGrip)
-			//{
-			//	// Open the claws of the gripper to be able to encapsulate the object/capsule.
-			//	// 
-			//	setGrip(1, thetahat);
-			//}
-			//else if (stateMachine == CloseGrip)
-			//{		
-			//	// Close the grip to the extent of -0.34 as gripAmount.This number was arrived at
-			//	// as a function of the sizes of the capsule and the claw dimensions.
-			//	// 
-			//	lTarget = 0.34;
-			//	rTarget = -0.34;
-			//	setGrip(-0.34, thetahat);
-			//	stateMachine = ClosingGrip;
-			//}
-			//else if (stateMachine == ClosingGrip)
-			//{
-			//	// The grip is almost close to the target values at this point.
-			//	// Proceed with Moving towards the target.
-			//	// 
-			//	if (abs(theta[7] - lTarget) < 0.01 && abs(rTarget - theta[8]) < 0.01)
-			//	{					
-			//		stateMachine = MoveTowardsTarget;
-			//	}
-			//}
+			if (stateMachine == OpenGrip)
+			{
+				// Open the claws of the gripper to be able to encapsulate the object/capsule.
+				// 
+				setGrip(1, thetahat);
+			}
+			else if (stateMachine == CloseGrip)
+			{		
+				// Close the grip to the extent of -0.34 as gripAmount.This number was arrived at
+				// as a function of the sizes of the capsule and the claw dimensions.
+				// 
+				lTarget = 0.34;
+				rTarget = -0.34;
+				setGrip(-0.34, thetahat);
+				stateMachine = ClosingGrip;
+			}
+			else if (stateMachine == ClosingGrip)
+			{
+				// The grip is almost close to the target values at this point.
+				// Proceed with Moving towards the target.
+				// 
+				if (abs(theta[7] - lTarget) < 0.01 && abs(rTarget - theta[8]) < 0.01)
+				{					
+					stateMachine = MoveTowardsTarget;
+				}
+			}
 
 			// set target DOFs to thetahat and advance simulation.
 			// 
