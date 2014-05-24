@@ -57,7 +57,7 @@ Vector generateSample()
 // return true if body configuration q is collision-free
 // return false otherwise
 // do not change this function
-bool isValidState(const Vector &q, const mjSize &size)
+bool isValidState(const Vector &q, const mjSize &size, bool fSleep)
 {
 	Vector qvel(size.nv);
 	Vector act(size.na);
@@ -66,18 +66,76 @@ bool isValidState(const Vector &q, const mjSize &size)
 
 	mjSetState(size.nq, size.nv, size.na, 0.0, (Vector&)q, qvel, act);
 	mjContact contact = mjGetContacts();
+
+	if (fSleep)
+	{
+		Sleep(300);
+	}
+
 	return (contact.nc == 0);
 }
 
 // test for collision-free path between two body configuration vectors
 // return true if there exists a collision-free path between body configuration qa and qb
 // return false otherwise
-bool isValidPath(const Vector &qa, const Vector &qb, const mjSize &size)
+bool isValidPath(const Vector &qa, const Vector &qb, const mjSize &size, bool fSleep)
 {
 	// number of interpolated steps between qa and qb to test for validity
 	static const int numstep = 10;
+	static const int dof = 7;
 
-	// your implementation goes here
+	int i = 0;
+
+	assert(isValidState(qa, size, fSleep));
+	assert(isValidState(qb, size, fSleep));
+
+	Vector qpos(dof);
+
+	assert(dof == qb.getSize());
+	assert(dof == qa.getSize());
+
+	double qaarr[dof] = {0.0};
+	double qbarr[dof] = {0.0};
+
+	for (int h = 0; h < dof; h++)
+	{
+		qaarr[h] = qa[h];
+		qbarr[h] = qb[h];
+	}
+
+	double interpolateddofvalues[dof][numstep] = { 0 };
+	int dofiter = 0;
+	double base = 0.0;
+
+	while (dofiter < dof)
+	{
+		double dofinterpolationstep = (qa[dofiter] - qb[dofiter]) / (numstep + 1);
+
+		for (int j = 0; j < numstep; j++)
+		{
+			interpolateddofvalues[dofiter][j] = qb[dofiter] + ((j + 1 ) *dofinterpolationstep);
+		}
+
+		dofiter++;
+	}
+
+	dofiter = 0;
+
+	while (i < numstep)
+	{
+		for (int k = 0; k < dof; k++)
+		{
+			qpos[k] = interpolateddofvalues[k][i];
+		}
+
+		if (!isValidState(qpos, size, fSleep))
+		{
+			return false;
+		}
+
+		i++;
+	}
+
 	return true;
 }
 
@@ -101,6 +159,11 @@ public:
 		return m_orderKey;
 	}
 
+	pKSample GetPKSample() const
+	{
+		return m_pkSample;
+	}
+
 	bool operator<(const QueueEntry& rhs) const
 	{
 		return m_orderKey < rhs.GetKey();
@@ -122,11 +185,14 @@ class KSample
 	static const int K = 20;
 	Vector m_sample;
 	std::priority_queue<PQueueEntry, std::vector<PQueueEntry>, MyComparator> m_KNN;
+	std::forward_list<PQueueEntry> m_validTransitions;
+	int m_iNumberOfValidTransitions;
 
 	public:
 	KSample(Vector sample)
 	{
 		m_sample = sample;
+		m_iNumberOfValidTransitions = 0;
 	}
 
 	Vector GetSampleVector()
@@ -150,6 +216,41 @@ class KSample
 		{
 			m_KNN.emplace(new QueueEntry(pSample, diffKey));
 		}		
+	}	
+
+	void CheckValidTransitions(const mjSize& size)
+	{
+		assert(m_KNN.size() == K);
+
+		while (m_KNN.size() > 0)
+		{
+			PQueueEntry pNeighBourQueueEntry = m_KNN.top();
+			assert(nullptr != pNeighBourQueueEntry);
+
+			if (isValidPath(m_sample, pNeighBourQueueEntry->GetPKSample()->GetSampleVector(), size, false))
+			{
+				m_iNumberOfValidTransitions++;
+				m_validTransitions.emplace_front(new QueueEntry(*pNeighBourQueueEntry));
+			}
+			m_KNN.pop();
+		}
+
+		assert(m_iNumberOfValidTransitions <= K);
+	}
+
+	// Function to test that all transitions in m_validTransitions are indeed valid.
+	// 
+	void TestValidTransitions(const mjSize& size)
+	{
+		auto it = m_validTransitions.begin();
+
+		for (int i = 0; i < m_iNumberOfValidTransitions; i++)
+		{
+			PQueueEntry pQueueEntryValidTransitionTarget = (PQueueEntry)(*it++);
+			assert(nullptr != pQueueEntryValidTransitionTarget);
+
+			assert(isValidPath(m_sample, pQueueEntryValidTransitionTarget->GetPKSample()->GetSampleVector(), size, false));
+		}
 	}
 };
 
@@ -164,7 +265,7 @@ void main(void)
 
 	static const int N = 1001;
 	static const int K = 10;
-	static const int nSamples = 100;
+	static const int nSamples = 1000;
 	static const int nTotalSamples = nSamples + 4;
 
 	// connect to mujoco server
@@ -190,7 +291,7 @@ void main(void)
 
 		// generate a collection of valid samples here
 		// make sure qinit and qgoal are included in this collection
-
+		// 
 		std::forward_list<pKSample> validStates(nTotalSamples + 4);
 		Vector qpos;
 		pKSample pkSample = nullptr;
@@ -202,7 +303,7 @@ void main(void)
 			
 			// Check if its collision free.
 			// 
-			if (isValidState(qpos, size))
+			if (isValidState(qpos, size, false))
 			{
 				pkSample = new KSample(qpos);
 				validStates.emplace_front(pkSample);
@@ -243,7 +344,6 @@ void main(void)
 			act.setConstant(0.0);
 
 			mjSetState(size.nq, size.nv, size.na, 0.0, qpos, qvel, act);
-			Sleep(100);
 		}
 							
 		// once valid, collision-free samples are generated, create a set of
@@ -297,6 +397,28 @@ void main(void)
 			// Calculate the nearest neighbours of the next sample.
 			// 
 			currentSample++;
+		}
+
+		// find the valid transitions for each sample from the set of K nearest neighbours
+		//
+		it = validStates.begin();
+		for (int j = 0; j < nTotalSamples; j++)
+		{
+			pk = (pKSample)(*it++);
+			assert(nullptr != pk);
+
+			pk->CheckValidTransitions(size);
+		}
+
+		// Test the valid transitions
+		// 
+		it = validStates.begin();
+		for (int j = 0; j < nTotalSamples; j++)
+		{
+			pk = (pKSample)(*it++);
+			assert(nullptr != pk);
+
+			pk->TestValidTransitions(size);
 		}
 		
 		// find three shortest paths among the available samples from 
