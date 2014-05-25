@@ -159,7 +159,7 @@ public:
 		return m_orderKey;
 	}
 
-	pKSample GetPKSample() const
+	pKSample GetPKSample()
 	{
 		return m_pkSample;
 	}
@@ -172,7 +172,7 @@ public:
 
 typedef QueueEntry* PQueueEntry;
 
-struct MyComparator
+struct MyComparator1
 {
 	bool operator() (PQueueEntry sample1, PQueueEntry sample2)
 	{
@@ -184,24 +184,70 @@ class KSample
 {
 	static const int K = 20;
 	Vector m_sample;
-	std::priority_queue<PQueueEntry, std::vector<PQueueEntry>, MyComparator> m_KNN;
+	std::priority_queue<PQueueEntry, std::vector<PQueueEntry>, MyComparator1> m_KNN;
 	std::forward_list<PQueueEntry> m_validTransitions;
 	int m_iNumberOfValidTransitions;
+	double m_dShortestPathEstimate;
+	pKSample m_pprevSampleWithShortestPathEstimate;
+	bool m_dijktraQueueMarked;
 
 	public:
 	KSample(Vector sample)
 	{
 		m_sample = sample;
 		m_iNumberOfValidTransitions = 0;
+		m_dShortestPathEstimate = INFINITY;
+		m_pprevSampleWithShortestPathEstimate = nullptr;
+		m_dijktraQueueMarked = false;
 	}
 
-	Vector GetSampleVector()
+	Vector GetSampleVector() const
 	{
 		return m_sample;
 	}
 
+	void SetAsSourceOfShortestPath()
+	{
+		m_dShortestPathEstimate = 0.0;
+	}
+
+	double GetShortestPathEstimate() const
+	{
+		return m_dShortestPathEstimate;
+	}
+
+	int GetNumberOfValidTransitions() const
+	{
+		return m_iNumberOfValidTransitions;
+	}
+
+	std::forward_list<PQueueEntry>& GetValidTransitionsList()
+	{
+		return m_validTransitions;
+	}
+
+	bool IsDijkstraQueueMarked() const
+	{
+		return m_dijktraQueueMarked;
+	}
+
+	void SetDijkstraQueueMarked()
+	{
+		assert(!m_dijktraQueueMarked);
+		m_dijktraQueueMarked = true;
+	}
+
+	void SetNewShortestPath(pKSample pPrevSampleOnShortestPath, double shortestPathEstimate)
+	{
+		m_pprevSampleWithShortestPathEstimate = pPrevSampleOnShortestPath;
+		m_dShortestPathEstimate = shortestPathEstimate;
+	}
+
 	void TryAddSampleToPriorityQueue(pKSample pSample, double diffKey)
 	{
+		assert(nullptr != pSample);
+		assert(diffKey > 0.0);
+
 		if (m_KNN.size() >= K)
 		{
 			// pop the sample farthest from this sample.
@@ -216,7 +262,7 @@ class KSample
 		{
 			m_KNN.emplace(new QueueEntry(pSample, diffKey));
 		}		
-	}	
+	}
 
 	void CheckValidTransitions(const mjSize& size)
 	{
@@ -253,6 +299,65 @@ class KSample
 		}
 	}
 };
+
+struct MyComparator2
+{
+	bool operator() (pKSample sample1, pKSample sample2)
+	{
+		return sample2->GetShortestPathEstimate() < sample1->GetShortestPathEstimate();
+	}
+};
+
+void RelaxVertex(const pKSample& pSample1, pKSample pSample2)
+{
+	assert(nullptr != pSample1);
+	assert(nullptr != pSample2);
+
+	Vector pSample1Vector = pSample1->GetSampleVector();
+	Vector pSample2Vector = pSample2->GetSampleVector();
+	Vector diff = pSample1Vector - pSample2Vector;
+
+	double distanceBetween1and2 = diff.length();
+	assert(distanceBetween1and2 > 0.0);
+
+	if (pSample1->GetShortestPathEstimate() + distanceBetween1and2 < pSample2->GetShortestPathEstimate())
+	{
+		pSample2->SetNewShortestPath(pSample1, pSample1->GetShortestPathEstimate() + distanceBetween1and2);
+	}
+}
+
+bool GetMinElementFromDijstraQueue(const std::forward_list<pKSample>& validStatesList, int iTotalSamples, pKSample& pkSampleOut)
+{	
+	auto it = validStatesList.begin();
+	double minShortestPathEstimateFound = INFINITY;
+
+	for (int i = 0; i < iTotalSamples && it != validStatesList.end(); i++, it++)
+	{
+		pKSample pk = pKSample(*it);
+		assert(nullptr != pk);
+
+		if (pk->GetShortestPathEstimate() < minShortestPathEstimateFound && !pk->IsDijkstraQueueMarked())
+		{
+			pkSampleOut = (*it);
+			minShortestPathEstimateFound = pk->GetShortestPathEstimate();
+		}
+	}
+
+	return minShortestPathEstimateFound != INFINITY;
+}
+
+/*
+void InitializeAllVertices(std::forward_list<pKSample>& pListSample, int nNumberOfSamples)
+{
+	auto it = pListSample.begin();
+	for (int i = 0; i < nNumberOfSamples; i++)
+	{
+		pKSample pk = (pKSample)(*it++);
+		assert(nullptr != pk);
+
+		pk->
+	}
+}*/
 
 void main(void)
 {
@@ -293,6 +398,7 @@ void main(void)
 		// make sure qinit and qgoal are included in this collection
 		// 
 		std::forward_list<pKSample> validStates(nTotalSamples + 4);
+		std::priority_queue<pKSample, std::vector<pKSample>, MyComparator2> m_QDijkstras;
 		Vector qpos;
 		pKSample pkSample = nullptr;
 		int i = 0;
@@ -424,6 +530,47 @@ void main(void)
 		// find three shortest paths among the available samples from 
 		// each of three qinit vectors to qgoal vector (using nearest
 		// neighbors above)
+		// 
+		// Test the valid transitions
+		// 
+		int y = 0;
+		it = validStates.begin();
+		for (int j = 0; j < nTotalSamples; j++)
+		{
+			pk = (pKSample)(*it++);
+			assert(nullptr != pk);
+
+			assert(pk->GetShortestPathEstimate() == INFINITY);
+
+			if (pk == pkqinit0)
+			{
+				y++;
+				pk->SetAsSourceOfShortestPath();
+			}
+		}
+		assert(y == 1);
+
+		pKSample pkSampleDijkstraIterator = nullptr;
+		int blah = 0;
+		while (GetMinElementFromDijstraQueue(validStates, nTotalSamples, pkSampleDijkstraIterator))
+		{
+			blah++;
+			assert(nullptr != pkSampleDijkstraIterator);
+
+			std::forward_list<PQueueEntry> validTransitionsForSample = pkSampleDijkstraIterator->GetValidTransitionsList();
+
+			auto it = validTransitionsForSample.begin();
+			for (int p = 0; p < pkSampleDijkstraIterator->GetNumberOfValidTransitions() && it != validTransitionsForSample.end(); p++)
+			{
+				PQueueEntry pkNeighbour = (PQueueEntry)(*it);
+				assert(nullptr != pkNeighbour);
+
+				RelaxVertex(pkSampleDijkstraIterator, pkNeighbour->GetPKSample());
+				it++;
+			}
+
+			pkSampleDijkstraIterator->SetDijkstraQueueMarked();
+		}
 
 		// animate three shortest paths found above by interpolating their
 		// positions and setting this interpolated state by mjSetState()
