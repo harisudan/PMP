@@ -1,0 +1,182 @@
+SampleSize: 1000 K: 20
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 3.14074
+Source: Qinit1; ShortestPathDistanceEstimate: 2.80039
+Source: Qinit2; ShortestPathDistanceEstimate: 4.07567
+
+
+SampleSize: 1000 K: 30
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.65053
+Source: Qinit1; ShortestPathDistanceEstimate: 2.73594
+Source: Qinit2; ShortestPathDistanceEstimate: 3.89869
+
+
+SampleSize: 1000 K: 50
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.65053
+Source: Qinit1; ShortestPathDistanceEstimate: 2.57774
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 1000 K: 80
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.34539
+Source: Qinit1; ShortestPathDistanceEstimate: 2.44528
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 1000 K: 100
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.34539
+Source: Qinit1; ShortestPathDistanceEstimate: 2.44528
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 1000 K: 150
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.34539
+Source: Qinit1; ShortestPathDistanceEstimate: 2.44528
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 1000 K: 65
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.65053
+Source: Qinit1; ShortestPathDistanceEstimate: 2.57774
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 2000 K: 20
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.2379
+Source: Qinit1; ShortestPathDistanceEstimate: 2.54061
+Source: Qinit2; ShortestPathDistanceEstimate: 3.65201
+
+
+SampleSize: 2000 K: 30
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.2379
+Source: Qinit1; ShortestPathDistanceEstimate: 2.54061
+Source: Qinit2; ShortestPathDistanceEstimate: 3.65201
+
+
+SampleSize: 2000 K: 50
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.04932
+Source: Qinit1; ShortestPathDistanceEstimate: 2.54061
+Source: Qinit2; ShortestPathDistanceEstimate: 3.49323
+
+
+SampleSize: 2000 K: 100
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.04932
+Source: Qinit1; ShortestPathDistanceEstimate: 2.47877
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 2000 K: 150
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.04932
+Source: Qinit1; ShortestPathDistanceEstimate: 2.29094
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 2000 K: 65
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.04932
+Source: Qinit1; ShortestPathDistanceEstimate: 2.54061
+Source: Qinit2; ShortestPathDistanceEstimate: 3.49323
+
+
+SampleSize: 2000 K: 80
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.04932
+Source: Qinit1; ShortestPathDistanceEstimate: 2.5066
+Source: Qinit2; ShortestPathDistanceEstimate: 3.37786
+
+
+SampleSize: 500 K: 10
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 3.57594
+Source: Qinit1; ShortestPathDistanceEstimate: 3.33553
+Source: Qinit2; ShortestPathDistanceEstimate: 4.91619
+
+
+SampleSize: 500 K: 20
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 3.22691
+Source: Qinit1; ShortestPathDistanceEstimate: 2.89125
+Source: Qinit2; ShortestPathDistanceEstimate: 3.41754
+
+
+SampleSize: 500 K: 30
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 3.17514
+Source: Qinit1; ShortestPathDistanceEstimate: 2.56383
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 500 K: 50
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.78686
+Source: Qinit1; ShortestPathDistanceEstimate: 2.56383
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 500 K: 65
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.60875
+Source: Qinit1; ShortestPathDistanceEstimate: 2.56383
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 500 K: 80
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.60875
+Source: Qinit1; ShortestPathDistanceEstimate: 2.47142
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 500 K: 100
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.60875
+Source: Qinit1; ShortestPathDistanceEstimate: 2.32563
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 500 K: 150
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.58725
+Source: Qinit1; ShortestPathDistanceEstimate: 2.32563
+Source: Qinit2; ShortestPathDistanceEstimate: 3.1986
+
+
+SampleSize: 1000 K: 10
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 3.48935
+Source: Qinit1; ShortestPathDistanceEstimate: 3.13794
+Source: Qinit2; ShortestPathDistanceEstimate: 4.54298
+
+
+SampleSize: 1000 K: 20
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 3.14074
+Source: Qinit1; ShortestPathDistanceEstimate: 2.80039
+Source: Qinit2; ShortestPathDistanceEstimate: 4.07567
+
+
+SampleSize: 2000 K: 20
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 2.2379
+Source: Qinit1; ShortestPathDistanceEstimate: 2.54061
+Source: Qinit2; ShortestPathDistanceEstimate: 3.65201
+
+
+SampleSize: 1000 K: 20
+Shortest Path Estimate For Each Source, for the above parameters.
+Source: Qinit0; ShortestPathDistanceEstimate: 3.14074
+Source: Qinit1; ShortestPathDistanceEstimate: 2.80039
+Source: Qinit2; ShortestPathDistanceEstimate: 4.07567
+
+
