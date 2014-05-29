@@ -91,11 +91,13 @@ bool isValidPath(const Vector &qa, const Vector &qb, const mjSize &size, bool fS
 
 	int i = 0;
 
-	assert(isValidState(qb, size, fSleep));
+	bool isValid = isValidState(qb, size, fSleep);
+	assert(isValid);	
 
 	if (!fForFinalSimulation)
 	{
-		assert(isValidState(qa, size, fSleep));
+		isValid = isValidState(qa, size, fSleep);
+		assert(isValid);
 	}
 
 	Vector qpos(dof);
@@ -120,6 +122,8 @@ bool isValidPath(const Vector &qa, const Vector &qb, const mjSize &size, bool fS
 	{
 		double dofinterpolationstep = (qa[dofiter] - qb[dofiter]) / (numstep + 1);
 
+		// populate ten different in-between points for this particular DOF coordinate.
+		// 
 		for (int j = 0; j < numstep; j++)
 		{
 			interpolateddofvalues[dofiter][j] = qb[dofiter] + ((j + 1 ) *dofinterpolationstep);
@@ -147,12 +151,23 @@ bool isValidPath(const Vector &qa, const Vector &qb, const mjSize &size, bool fS
 
 	if (fForFinalSimulation)
 	{
-		assert(isValidState(qa, size, fSleep));
+		isValid = isValidState(qa, size, fSleep);
+		assert(isValid);
 	}
 
 	return true;
 }
 
+// Animate path, by just calling IsValidPath (which already interpolates 10 in-between states and animates them through the call to IsValidState) 
+// 
+void AnimatePath(const Vector &qa, const Vector &qb, const mjSize &size)
+{
+	bool isAnimationSuccessful = isValidPath(qa, qb, size, true /*fSleep*/, true /*fForFinalSimulation*/);
+	assert(isAnimationSuccessful == true);
+}
+
+// forward declarations
+// 
 class KSample;
 typedef KSample* pKSample;
 bool GetMinElementFromDijstraQueue(const forward_list<pKSample>& validStatesList, int iTotalSamples, pKSample& pkSampleOut, int sourceIndex);
@@ -188,23 +203,55 @@ public:
 
 typedef QueueEntry* PQueueEntry;
 
+// A comparator function to compare two entries in the priority queue 
+// used for holding K nearest neighbours
+// 
 struct MyComparator1
 {
 	bool operator() (PQueueEntry sample1, PQueueEntry sample2)
 	{
+		// call the overloaded operator
+		// 
 		return *sample1 < *sample2;
 	}
 };
 
+// Encapsulates a state as a node in the graph
+// 
 class KSample
 {
+	// The number of source states we are dealing with in the problem
+	// 
 	static const int noOfSource = 3;
+
+	// The state actually represented by this KSample
+	// 
 	Vector m_sample;
+
+	// The priority queue to carry the K Nearest neighbours for this sample
+	// 
 	priority_queue<PQueueEntry, vector<PQueueEntry>, MyComparator1> m_KNN;
+
+	// The set of valid transitions (a subset of entries of K Nearest neighbors)
+	// populated based on precense of valid 10 interpolated states.
+	// 
 	forward_list<PQueueEntry> m_validTransitions;
+
+	// The number of valid transitions we found for this sample.
+	// 
 	int m_iNumberOfValidTransitions;
+
+	// The array carrying the shortest path estimate of this state from each of the three source states.
+	// 
 	double m_dShortestPathEstimate[noOfSource];
+
+	// The array carrying the backpointer to the previous state used to arrive to this state
+	// yielding the above shortest estimate. Array to maintain this information for each of the three source states.
+	// 
 	pKSample m_pprevSampleWithShortestPathEstimate[noOfSource];
+
+	// A marker to indicate that this sample was previously disjkstra processed (for each of the three sources)
+	// 
 	bool m_dijktraQueueMarked[noOfSource];
 
 	public:
@@ -228,6 +275,8 @@ class KSample
 		return m_sample;
 	}
 
+	// Function called if this sample is going to be the source state.
+	// 
 	void SetAsSourceOfShortestPath(int sourceIndex)
 	{
 		assert(sourceIndex <= noOfSource - 1);
@@ -242,6 +291,9 @@ class KSample
 		return m_dShortestPathEstimate[sourceIndex];
 	}
 
+	// Return the backpointer for a particular source state (based on sourceindex)
+	// Used while backtracking and animating the shortest path.
+	// 
 	void GetPrevSampleInPath(pKSample& pkSample, int sourceIndex)
 	{
 		assert(sourceIndex <= noOfSource - 1);
@@ -271,6 +323,8 @@ class KSample
 		m_dijktraQueueMarked[sourceIndex] = true;
 	}
 
+	// Update the backpointer and the new shortestpath estimate achieved through that.
+	// 
 	void SetNewShortestPath(const pKSample& pPrevSampleOnShortestPath, double shortestPathEstimate, int sourceIndex)
 	{
 		assert(sourceIndex <= noOfSource - 1);
@@ -279,6 +333,9 @@ class KSample
 		m_dShortestPathEstimate[sourceIndex] = shortestPathEstimate;
 	}
 
+	// Add a newly generated sample to priority queue, with a max cap on K elements in the queue
+	// Retain K closest samples in the queue.
+	// 
 	void TryAddSampleToPriorityQueue(pKSample pSample, double diffKey, int MaxSizeK)
 	{
 		assert(nullptr != pSample);
@@ -300,6 +357,9 @@ class KSample
 		}		
 	}
 
+	// Go through each of the K nearest neighbors and find out which of those 
+	// can be reached with valid transitions
+	// 
 	void CheckValidTransitions(const mjSize& size, int MaxSizeK)
 	{
 		assert(m_KNN.size() == MaxSizeK);
@@ -309,6 +369,8 @@ class KSample
 			PQueueEntry pNeighBourQueueEntry = m_KNN.top();
 			assert(nullptr != pNeighBourQueueEntry);
 
+			// Check if there is a valid path to this neighbour
+			// 
 			if (isValidPath(m_sample, pNeighBourQueueEntry->GetPKSample()->GetSampleVector(), size, false /*fSleep*/, false /*fForFinalSimulation*/))
 			{
 				m_iNumberOfValidTransitions++;
@@ -320,7 +382,7 @@ class KSample
 		assert(m_iNumberOfValidTransitions <= MaxSizeK);
 	}
 
-	// Function to test that all transitions in m_validTransitions are indeed valid.
+	// Function to unit test that all transitions in m_validTransitions are indeed valid.
 	// 
 	void TestValidTransitions(const mjSize& size)
 	{
@@ -336,6 +398,9 @@ class KSample
 	}
 };
 
+// Execute Dijskstra's algorithm to find the shortest paths between pkSource and any vertex.
+// This would also compute the shortest path to pKGoal.
+// 
 void FindShortestPath(int sourceIndex, pKSample pkSource, forward_list<pKSample>& validStates, int iTotalSamples)
 {
 	// Test the valid transitions
@@ -343,26 +408,43 @@ void FindShortestPath(int sourceIndex, pKSample pkSource, forward_list<pKSample>
 	pKSample pk = nullptr;
 	int y = 0, j = 0;
 	auto it = validStates.begin();
+
+	// Asserting the condition of the shortestPathEstimate variable and 
+	// marking the source's shortestPathEstimate as ZERO.
+	// 
 	for (j = 0; j < iTotalSamples; j++)
 	{
 		pk = (pKSample)(*it++);
 		assert(nullptr != pk);
-
+		
 		assert(pk->GetShortestPathEstimate(sourceIndex) == INFINITY);
 
+		// Mark the shortestpath estimate for the source state as zero.
+		// 
 		if (pk == pkSource)
 		{
 			y++;
 			pk->SetAsSourceOfShortestPath(sourceIndex);
 		}
 	}
+
+	// Only one source - just a sanity to guard against any bad pointer management.
+	// 
 	assert(y == 1);
 
 	pKSample pkSampleDijkstraIterator = nullptr;
-	int blah = 0;
+
+	// No:of states in the graph that are reachable, just to keep track.
+	// 
+	int noOfReachableStates = 0;
+
+	// While we have connected nodes in the graph which have not been smoothed before,
+	// retrieve each vertex based on whosoever has the min shortest path estimate (simulating a min priority queue)
+	// and ReAdjust (update shortest path if reaching the neighbour is shorter through this node) all the links that the vertex has.
+	// 
 	while (GetMinElementFromDijstraQueue(validStates, iTotalSamples, pkSampleDijkstraIterator, sourceIndex))
 	{
-		blah++;
+		noOfReachableStates++;
 		assert(nullptr != pkSampleDijkstraIterator);
 
 		forward_list<PQueueEntry> validTransitionsForSample = pkSampleDijkstraIterator->GetValidTransitionsList();
@@ -373,18 +455,24 @@ void FindShortestPath(int sourceIndex, pKSample pkSource, forward_list<pKSample>
 			PQueueEntry pkNeighbour = (PQueueEntry)(*it);
 			assert(nullptr != pkNeighbour);
 
+			// Try to see if reaching the pkNeighbour through pkSampleDijkstraIterator will yield in a shorter path
+			// If so, update the shortest path estimate and the back pointer to point to this parent (for backtracking)
+			// 
 			ReAdjustEstimateDijkstra(pkSampleDijkstraIterator, pkNeighbour->GetPKSample(), sourceIndex);
 			it++;
 		}
 
+		// Mark that we have processed this vertex once and so will not process it anymore.
+		// 
 		pkSampleDijkstraIterator->SetDijkstraQueueMarked(sourceIndex);
 	}
 
-	// Test the disjkstra
-	//
+	// Unit Test the disjkstra.
+	// Assert some of the expected facts to make sure all objects and data structures are in expected states.
+	// 
 	pKSample prevSampleInPath = nullptr;
 	it = validStates.begin();
-	blah = 0;
+	int noOfUnreachableStates = 0;
 	for (j = 0; j < iTotalSamples; j++)
 	{
 		pk = (pKSample)(*it++);
@@ -392,6 +480,8 @@ void FindShortestPath(int sourceIndex, pKSample pkSource, forward_list<pKSample>
 
 		pk->GetPrevSampleInPath(prevSampleInPath, sourceIndex);
 
+		// All vertices which are still marked with shortestpathestimate as INFINITY are unreachable nodes in the graph.
+		// 
 		if (pk->GetShortestPathEstimate(sourceIndex) != INFINITY)
 		{
 			assert(pk->IsDijkstraQueueMarked(sourceIndex) == true);
@@ -403,11 +493,15 @@ void FindShortestPath(int sourceIndex, pKSample pkSource, forward_list<pKSample>
 			// 
 			assert(pk->IsDijkstraQueueMarked(sourceIndex) == false);
 			assert(prevSampleInPath == nullptr);
-			blah++;
+			noOfUnreachableStates++;
 		}
 	}
 }
 
+// Given the source state and the goal state, animate the path going from the source to the target
+// Use the backpointers stored in each pKSample to get to the pkSource. In-between each sample on the way,
+// use the IsValidPath function to interpolate 10 valid states in-between those two states and animate them.
+// 
 double AnimateShortestPaths(int sourceIndex, pKSample pkSource, pKSample pKGoal, const mjSize& size)
 {
 	// get input from user first so they are ready for seeing the animated reconstruction of shortest paths
@@ -430,6 +524,10 @@ double AnimateShortestPaths(int sourceIndex, pKSample pkSource, pKSample pKGoal,
 	forward_list<pKSample> forwardPathOrder;
 	int noOfStatesInPath = 0;
 
+	// Go through the back pointers from pKGoal and add them in to forwardPathOrder list.
+	// So the list is populated such a way that the state ending up at the front of the list is the source.
+	// and the state at the end of the list is the goal.
+	// 
 	while (pkCurrentBackIterator != pkSource)
 	{
 		forwardPathOrder.emplace_front(pkCurrentBackIterator);
@@ -439,10 +537,14 @@ double AnimateShortestPaths(int sourceIndex, pKSample pkSource, pKSample pKGoal,
 		pkCurrentBackIterator = pk;
 	}
 
+	// Place the source at the starting of the list.
+	// 
 	assert(pkCurrentBackIterator == pkSource);
 	forwardPathOrder.emplace_front(pkSource);
 	noOfStatesInPath++;
 
+	// Now iterate forward starting from the front (the source state) and animate each state (with 10 interpolated values between each state).
+	// 
 	auto it = forwardPathOrder.begin();
 
 	pKSample pkPrevious = nullptr;
@@ -457,7 +559,7 @@ double AnimateShortestPaths(int sourceIndex, pKSample pkSource, pKSample pKGoal,
 			// this interpolates 10 points inbetween and simulates it
 			// also asserts that isValidPath returns true
 			// 
-			assert(isValidPath(pk->GetSampleVector(), pkPrevious->GetSampleVector(), size, true /*fSleep*/, true /*fForFinalSimulation*/));
+			AnimatePath(pk->GetSampleVector(), pkPrevious->GetSampleVector(), size);
 		}
 		else
 		{
@@ -482,9 +584,16 @@ double AnimateShortestPaths(int sourceIndex, pKSample pkSource, pKSample pKGoal,
 	assert(pk == pKGoal);
 	assert(pkPrevious == pKGoal);
 
+	// Return the shortest path estimate for this source (represented by the sourceindex) from the goal.
+	// 
 	return pKGoal->GetShortestPathEstimate(sourceIndex);
 }
 
+// Helper function used in Djkstra's update step.
+// Try to see if reaching pSample2 from pSample1 is closer than the shortest path estimate we already have for pSample2.
+// If yes, update the new shortest path estimate for reaching through pSample1 and also 
+// update pSample2's back pointer to pSample1, to assist in correct back tracking.
+// 
 void ReAdjustEstimateDijkstra(const pKSample& pSample1, pKSample pSample2, int sourceIndex)
 {
 	assert(nullptr != pSample1);
@@ -492,17 +601,26 @@ void ReAdjustEstimateDijkstra(const pKSample& pSample1, pKSample pSample2, int s
 
 	Vector pSample1Vector = pSample1->GetSampleVector();
 	Vector pSample2Vector = pSample2->GetSampleVector();
+
+	// Take the diff between the two vectors and take the norm of the vector.
+	// 
 	Vector diff = pSample1Vector - pSample2Vector;
 
 	double distanceBetween1and2 = diff.length();
 	assert(distanceBetween1and2 > 0.0);
 
+	// If the estimate achieved throughpSample1 is lower than the existing shortest path estimate for pSample2, update the path and estimate.
+	// 
 	if (pSample1->GetShortestPathEstimate(sourceIndex) + distanceBetween1and2 < pSample2->GetShortestPathEstimate(sourceIndex))
 	{
 		pSample2->SetNewShortestPath(pSample1, pSample1->GetShortestPathEstimate(sourceIndex) + distanceBetween1and2, sourceIndex);
 	}
 }
 
+// This is the function simulating a min priority queue based on the shortestpath estimates of every state (node in a graph)
+// Simply go through the existing list in validStatesList, whosoever has the shortest estimate in the list and 
+// whosoever was not dijkstra processed before, return that state.
+// 
 bool GetMinElementFromDijstraQueue(const forward_list<pKSample>& validStatesList, int iTotalSamples, pKSample& pkSampleOut, int sourceIndex)
 {	
 	auto it = validStatesList.begin();
@@ -520,6 +638,8 @@ bool GetMinElementFromDijstraQueue(const forward_list<pKSample>& validStatesList
 		}
 	}
 
+	// don't process un-reachable nodes
+	// 
 	return minShortestPathEstimateFound != INFINITY;
 }
 
@@ -532,8 +652,8 @@ void main(int argc, char* argv[])
 	// goal pose vector (must be included in the list of samples)
 	static const Vector qgoal = Vector(NUM_JOINT, keygoal);
 
-	static const int N = argc > 1 ? atoi(argv[1]) : 2000;
-	static const int K = argc > 2 ? atoi(argv[2]) : 10;
+	static const int N = argc > 1 ? atoi(argv[1]) : 1000;
+	static const int K = argc > 2 ? atoi(argv[2]) : 30;
 	
 	// + 4 to account for 3 init states and 1 goal state.
 	// 
@@ -568,6 +688,8 @@ void main(int argc, char* argv[])
 		pKSample pkSample = nullptr;
 		int i = 0, j = 0;
 
+		// Generate N samples and add them to validStates if they are valid.
+		// 
 		while (i < N)
 		{
 			qpos = generateSample();
@@ -588,7 +710,7 @@ void main(int argc, char* argv[])
 		pKSample pkqinit2 = new KSample(qinit[2]);
 		pKSample pkqgoal = new KSample(qgoal);
 
-		// Add the three init and 1 goal state.
+		// Add the three init and 1 goal state to the list of validStates.
 		// 
 		validStates.emplace_front(pkqinit0);
 		validStates.emplace_front(pkqinit1);
@@ -627,6 +749,8 @@ void main(int argc, char* argv[])
 		auto currentSample = validStates.begin();
 		int k = 0;
 
+		// loop through all samples to generate K closest neighbours for each sample
+		// 
 		for (j = 0; j < iTotalSamples; j++)
 		{
 			k = 0;
@@ -656,7 +780,8 @@ void main(int argc, char* argv[])
 				diff = qposCurrent - qpos;
 				diffLength = diff.length();
 
-				// Try to insert the element with the diffLength in to priority heap.
+				// Try to insert the element with the diffLength distance in to priority queue.
+				// The function will take care to retain only K nearest neighbors
 				// 
 				pkSampleCurrent->TryAddSampleToPriorityQueue(pk, diffLength, K);
 
@@ -678,6 +803,8 @@ void main(int argc, char* argv[])
 			pk = (pKSample)(*it++);
 			assert(nullptr != pk);
 
+			// this will loop through each of K nearest neighbours and populate the validTransitions list
+			// 
 			pk->CheckValidTransitions(size, K);
 		}
 
