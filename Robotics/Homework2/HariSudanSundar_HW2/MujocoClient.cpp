@@ -842,7 +842,7 @@ void main(int argc, char* argv[])
 		if (argc > 3)
 		{
 			ofstream myfile;
-			myfile.open(argv[3], ios_base::app);
+			myfile.open(argv[3], ios_base::out);
 			myfile << "SampleSize: " << N << " K: "<< K << "\n";
 			myfile << "Shortest Path Estimate For Each Source, for the above parameters.\n";
 			myfile << "Source: Qinit0; ShortestPathDistanceEstimate: " << costFromSource[0] << "\n";
