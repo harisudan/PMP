@@ -123,6 +123,12 @@ void main(void)
 		// loops over a series of simulation trials (state is reset between trials)
 		int numHit = 0;
 		int numMiss = 0;
+
+		// identity matrix for re-use
+		//
+		Matrix iden(6, 6);
+		iden.setIdentity();
+
 		for (int trial = 0; trial<NUM_TRIAL; trial++)
 		{
 			// reset to trial's keyframe
@@ -141,7 +147,7 @@ void main(void)
 			P.setIdentity();
 			P = P * Pdiag;
 
-			Matrix PkPrev = P;
+			Matrix Pk = P;
 
 			// run simulation until ball hits something
 			for (int k = 0;; k++)
@@ -161,30 +167,30 @@ void main(void)
 
 				Matrix Pkf(6, 6);
 				Pkf.setConstant(0.0);
-				Pkf = (jfxPrev * PkPrev * jfxPrev.transpose()) + Q;
+				Pkf = (jfxPrev * Pk * jfxPrev.transpose()) + Q;
+				
+				// Data assimilation step
+				// 
 				Matrix kalmanGain_i(6, 6);
-				Vector zk(3);
-				Matrix jhxfk_i(6, 6);
+				Vector hxk_i(3);
+				Matrix jhxk_i(6, 6);
+				Vector xk_i = xkf;
 											
 				for (int i = 0; i < 30; i++)
 				{
-					// Data assimilation step
-					// 
-					h(xkf, &zk, &jhxfk_i);
+					h(xk_i, &hxk_i, &jhxk_i);
 
 					// calculate kalman gain
 					// 
-					kalmanGain_i = Pkf * jhxfk_i.transpose() * ((jhxfk_i * Pkf * jhxfk_i.transpose() + R).inverse());
+					kalmanGain_i = Pkf * jhxk_i.transpose() * ((jhxk_i * Pkf * jhxk_i.transpose() + R).inverse());
 
-					// Update xa
+					// Update xk_i
 					// 
-					xa = xkf + kalmanGain_i * (z - zk);
+					xk_i = xkf + kalmanGain_i * (z - hxk_i);
 				}
 
-				Matrix iden(6, 6);
-				iden.setIdentity();
-
-				PkPrev = (iden - (kalmanGain_i * jhxfk_i)) * Pkf;
+				Pk = (iden - (kalmanGain_i * jhxk_i)) * Pkf;
+				xa = xk_i;
 
 				// set estimator location for visualization.
 				// 
