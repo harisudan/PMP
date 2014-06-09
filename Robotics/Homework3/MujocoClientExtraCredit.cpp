@@ -155,6 +155,10 @@ void main(void)
 				// noisy sensor measurement
 				Vector z(3, mjGetSensor());
 
+				double blah = z[0];
+				double blah1 = z[1];
+				double blah2 = z[2];
+
 				// TODO:
 				// perform your EFK predictor/corrector updates here
 				// you should have xa and P updated after this
@@ -162,21 +166,23 @@ void main(void)
 				// Model forecast step
 				// 
 				Vector xkf(6);
-				Matrix jfxPrev(6, 6);
-				f(xa, &xkf, &jfxPrev);
+				Matrix jfxk(6, 6);
+				f(xa, &xkf, &jfxk);
 
 				Matrix Pkf(6, 6);
 				Pkf.setConstant(0.0);
-				Pkf = (jfxPrev * Pk * jfxPrev.transpose()) + Q;
-				
+				Pkf = (jfxk * Pk * jfxk.transpose()) + Q;
+
 				// Data assimilation step
 				// 
 				Matrix kalmanGain_i(6, 6);
 				Vector hxk_i(3);
 				Matrix jhxk_i(6, 6);
 				Vector xk_i = xkf;
-											
-				for (int i = 0; i < 30; i++)
+				Vector xk_i_previous = xk_i;
+				double diff = 0.0;
+
+				for (int i = 0; i < 40; i++)
 				{
 					h(xk_i, &hxk_i, &jhxk_i);
 
@@ -187,6 +193,22 @@ void main(void)
 					// Update xk_i
 					// 
 					xk_i = xkf + kalmanGain_i * (z - hxk_i);
+
+					// Calculate diff (change) from previos xk_i_previous
+					// Stop the loop if the diff (change) is less
+					//
+					diff = (xk_i - xk_i_previous).length();
+
+					// A threshold of 1e-4 used to stop on further iterations
+					// 
+					if (diff < 0.0001)
+					{
+						break;
+					}
+
+					// update xk_i_previous
+					//
+					xk_i_previous = xk_i;
 				}
 
 				Pk = (iden - (kalmanGain_i * jhxk_i)) * Pkf;
@@ -202,9 +224,38 @@ void main(void)
 				// fill xtarget vector here with desired horizonal (entry 0) and
 				// vectical (entry 1) position of the paddle
 				// set controls.
+
+				// Calculate timeToImpact by dividing Py / vy (there is no acceleration across y)
+				//
+				double timeToImpact = xa[1] / xa[4];
+
+				if (timeToImpact < 0)
+				{
+					timeToImpact = -timeToImpact;
+				}
+
+				timeToImpact = timeToImpact / 1000;
+
+				double blah3 = xa[0];
+				double blah4 = xa[1];
+				double blah5 = xa[2];
+				double blah6 = xa[3];
+				double blah7 = xa[4];
+				double blah8 = xa[5];
+
+				// Calculate the height at impact (the z coordinate where the ball is estimated to hit the wall)
+				// by using the timeToImpact, Pz, vz and accelaration due to gravity (-2 in z direction)
+				//
+				double zHeightAtImpact = xa[2] + (xa[5] * timeToImpact) + (0.5 * -2 * (timeToImpact * timeToImpact));
+
+				// Do similar calculation to obtain x coordinate at impact - but the acceleration across x is zero
 				// 
-				xtarget[0] = xa[0];
-				xtarget[1] = xa[2];
+				double xCoordinateAtImpact = xa[0] + (xa[3] * timeToImpact);
+
+				// Now set xtarget position of paddle to the estimated impact coordinates of xCoordinateAtImpact, zHeightAtImpact
+				// 
+				xtarget[0] = xCoordinateAtImpact;
+				xtarget[1] = zHeightAtImpact;
 
 				mjSetControl(2, xtarget);
 

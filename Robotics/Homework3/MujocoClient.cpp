@@ -7,19 +7,19 @@
 #include "Quaternion.h"
 #include "windows.h"
 
-typedef GVector<double> Vector;
-typedef GMatrix<double> Matrix;
-typedef Quaternion<double> Quat;
-
-// paddle geom ID
-static const int PADDLE_GEOM = 4;
-// number of trial keyframes in the model
-static const int NUM_TRIAL = 10;
-// simulation timestep size
-static const double dt = 1e-3;
-
-namespace part11
+namespace MainQuestion
 {
+	typedef GVector<double> Vector;
+	typedef GMatrix<double> Matrix;
+	typedef Quaternion<double> Quat;
+
+	// paddle geom ID
+	static const int PADDLE_GEOM = 4;
+	// number of trial keyframes in the model
+	static const int NUM_TRIAL = 10;
+	// simulation timestep size
+	static const double dt = 1e-3;
+
 	// model dynamics function
 	// given x{k-1} returns x{k} = f(x{k-1}) and its Jacobian J_f(x{k-1})
 	// J_f is |x|*|x| matrix
@@ -125,6 +125,12 @@ namespace part11
 			// loops over a series of simulation trials (state is reset between trials)
 			int numHit = 0;
 			int numMiss = 0;
+
+			// identity matrix for re-use
+			//
+			Matrix iden(6, 6);
+			iden.setIdentity();
+
 			for (int trial = 0; trial < NUM_TRIAL; trial++)
 			{
 				// reset to trial's keyframe
@@ -143,13 +149,17 @@ namespace part11
 				P.setIdentity();
 				P = P * Pdiag;
 
-				Matrix PkPrev = P;
+				Matrix Pk = P;
 
 				// run simulation until ball hits something
 				for (int k = 0;; k++)
 				{
 					// noisy sensor measurement
 					Vector z(3, mjGetSensor());
+
+					double blah = z[0];
+					double blah1 = z[1];
+					double blah2 = z[2];
 
 					// TODO:
 					// perform your EFK predictor/corrector updates here
@@ -158,32 +168,53 @@ namespace part11
 					// Model forecast step
 					// 
 					Vector xkf(6);
-					Matrix jfxPrev(6, 6);
-					f(xa, &xkf, &jfxPrev);
+					Matrix jfxk(6, 6);
+					f(xa, &xkf, &jfxk);
 
 					Matrix Pkf(6, 6);
 					Pkf.setConstant(0.0);
-					Pkf = (jfxPrev * PkPrev * jfxPrev.transpose()) + Q;
+					Pkf = (jfxk * Pk * jfxk.transpose()) + Q;
 
 					// Data assimilation step
 					// 
-					Vector zk(3);
-					Matrix jhxfk(6, 6);
-					h(xkf, &zk, &jhxfk);
+					Matrix kalmanGain_i(6, 6);
+					Vector hxk_i(3);
+					Matrix jhxk_i(6, 6);
+					Vector xk_i = xkf;
+					Vector xk_i_previous = xk_i;
+					double diff = 0.0;
 
-					// calculate kalman gain
-					// 
-					Matrix kalmanGain(6, 6);
-					kalmanGain = Pkf * jhxfk.transpose() * ((jhxfk * Pkf * jhxfk.transpose() + R).inverse());
+					for (int i = 0; i < 40; i++)
+					{
+						h(xk_i, &hxk_i, &jhxk_i);
 
-					// Update xa
-					// 
-					xa = xkf + kalmanGain * (z - zk);
+						// calculate kalman gain
+						// 
+						kalmanGain_i = Pkf * jhxk_i.transpose() * ((jhxk_i * Pkf * jhxk_i.transpose() + R).inverse());
 
-					Matrix iden(6, 6);
-					iden.setIdentity();
+						// Update xk_i
+						// 
+						xk_i = xkf + kalmanGain_i * (z - hxk_i);
 
-					PkPrev = (iden - (kalmanGain * jhxfk)) * Pkf;
+						// Calculate diff (change) from previos xk_i_previous
+						// Stop the loop if the diff (change) is less
+						//
+						diff = (xk_i - xk_i_previous).length();
+
+						// A threshold of 1e-4 used to stop on further iterations
+						// 
+						if (diff < 0.0001)
+						{
+							break;
+						}
+
+						// update xk_i_previous
+						//
+						xk_i_previous = xk_i;
+					}
+
+					Pk = (iden - (kalmanGain_i * jhxk_i)) * Pkf;
+					xa = xk_i;
 
 					// set estimator location for visualization.
 					// 
@@ -195,6 +226,7 @@ namespace part11
 					// fill xtarget vector here with desired horizonal (entry 0) and
 					// vectical (entry 1) position of the paddle
 					// set controls.
+					// Set xtarget using the positional components of the estimated position xa (for x, z coordinates)
 					// 
 					xtarget[0] = xa[0];
 					xtarget[1] = xa[2];

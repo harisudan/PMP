@@ -85,10 +85,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="MujocoClientPart1.1.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="MujocoClientPart1.2.cpp" />
+    <ClCompile Include="MujocoClient.cpp" />
+    <ClCompile Include="MujocoClientExtraCredit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="comm.h" />
