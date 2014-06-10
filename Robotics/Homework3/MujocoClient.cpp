@@ -7,269 +7,268 @@
 #include "Quaternion.h"
 #include "windows.h"
 
-namespace MainQuestion
+typedef GVector<double> Vector;
+typedef GMatrix<double> Matrix;
+typedef Quaternion<double> Quat;
+
+// paddle geom ID
+static const int PADDLE_GEOM = 4;
+// number of trial keyframes in the model
+static const int NUM_TRIAL = 10;
+// simulation timestep size
+static const double dt = 1e-3;
+
+// model dynamics function
+// given x{k-1} returns x{k} = f(x{k-1}) and its Jacobian J_f(x{k-1})
+// J_f is |x|*|x| matrix
+void f(const Vector &xprev, Vector *x, Matrix *Jfxprev)
 {
-	typedef GVector<double> Vector;
-	typedef GMatrix<double> Matrix;
-	typedef Quaternion<double> Quat;
+	// acceleration due to gravity
+	static const double a[3] = { 0.0, 0.0, -2.0 };
 
-	// paddle geom ID
-	static const int PADDLE_GEOM = 4;
-	// number of trial keyframes in the model
-	static const int NUM_TRIAL = 10;
-	// simulation timestep size
-	static const double dt = 1e-3;
-
-	// model dynamics function
-	// given x{k-1} returns x{k} = f(x{k-1}) and its Jacobian J_f(x{k-1})
-	// J_f is |x|*|x| matrix
-	void f(const Vector &xprev, Vector *x, Matrix *Jfxprev)
+	// generate linear dynamics matrices
+	Matrix A(6, 6);
+	for (int r = 0; r < 3; r++)
+	for (int c = 0; c < 3; c++)
 	{
-		// acceleration due to gravity
-		static const double a[3] = { 0.0, 0.0, -2.0 };
-
-		// generate linear dynamics matrices
-		Matrix A(6, 6);
-		for (int r = 0; r < 3; r++)
-		for (int c = 0; c < 3; c++)
-		{
-			A(0 + r, 0 + c) = (r == c) ? 1.0 : 0.0;
-			A(3 + r, 3 + c) = (r == c) ? 1.0 : 0.0;
-			A(0 + r, 3 + c) = (r == c) ? dt : 0.0;
-			A(3 + r, 0 + c) = 0.0;
-		}
-		Vector b(6);
-		for (int r = 0; r < 3; r++)
-		{
-			b[0 + r] = 0.0;
-			b[3 + r] = dt * a[r];
-		}
-
-		if (x)
-		{
-			*x = A * xprev + b;
-		}
-		if (Jfxprev)
-		{
-			*Jfxprev = A;
-		}
+		A(0 + r, 0 + c) = (r == c) ? 1.0 : 0.0;
+		A(3 + r, 3 + c) = (r == c) ? 1.0 : 0.0;
+		A(0 + r, 3 + c) = (r == c) ? dt : 0.0;
+		A(3 + r, 0 + c) = 0.0;
+	}
+	Vector b(6);
+	for (int r = 0; r < 3; r++)
+	{
+		b[0 + r] = 0.0;
+		b[3 + r] = dt * a[r];
 	}
 
-	// observation function
-	// given x{k} return z{k} = h(x{k}) and its Jacobian J_h(x{k})
-	// J_h is |z|*|x| matrix 
-	void h(const Vector &x, Vector *z, Matrix *Jhx)
+	if (x)
 	{
-		double k1 = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
-		double k2 = x[0] * x[0] + x[1] * x[1];
+		*x = A * xprev + b;
+	}
+	if (Jfxprev)
+	{
+		*Jfxprev = A;
+	}
+}
 
-		if (z)
-		{
-			*z = Vector(3);
-			(*z)[0] = atan2(x[1], x[0]);
-			(*z)[1] = atan2(x[2], sqrt(k2));
-			(*z)[2] = sqrt(k1);
-		}
-		if (Jhx)
-		{
-			*Jhx = Matrix(3, 6);
-			Jhx->setConstant(0.0);
+// observation function
+// given x{k} return z{k} = h(x{k}) and its Jacobian J_h(x{k})
+// J_h is |z|*|x| matrix 
+void h(const Vector &x, Vector *z, Matrix *Jhx)
+{
+	double k1 = x[0] * x[0] + x[1] * x[1] + x[2] * x[2];
+	double k2 = x[0] * x[0] + x[1] * x[1];
 
-			// dz[0]/dx
-			(*Jhx)(0, 0) = -x[1] / k2;
-			(*Jhx)(0, 1) = +x[0] / k2;
-			(*Jhx)(0, 2) = 0.0;
+	if (z)
+	{
+		*z = Vector(3);
+		(*z)[0] = atan2(x[1], x[0]);
+		(*z)[1] = atan2(x[2], sqrt(k2));
+		(*z)[2] = sqrt(k1);
+	}
+	if (Jhx)
+	{
+		*Jhx = Matrix(3, 6);
+		Jhx->setConstant(0.0);
 
-			// dz[1]/dx
-			(*Jhx)(1, 0) = -x[0] * x[2] / (sqrt(k2) * k1);
-			(*Jhx)(1, 1) = -x[1] * x[2] / (sqrt(k2) * k1);
-			(*Jhx)(1, 2) = sqrt(k2) / k1;
+		// dz[0]/dx
+		(*Jhx)(0, 0) = -x[1] / k2;
+		(*Jhx)(0, 1) = +x[0] / k2;
+		(*Jhx)(0, 2) = 0.0;
 
-			// dz[2]/dx
-			(*Jhx)(2, 0) = x[0] / sqrt(k1);
-			(*Jhx)(2, 1) = x[1] / sqrt(k1);
-			(*Jhx)(2, 2) = x[2] / sqrt(k1);
-		}
+		// dz[1]/dx
+		(*Jhx)(1, 0) = -x[0] * x[2] / (sqrt(k2) * k1);
+		(*Jhx)(1, 1) = -x[1] * x[2] / (sqrt(k2) * k1);
+		(*Jhx)(1, 2) = sqrt(k2) / k1;
+
+		// dz[2]/dx
+		(*Jhx)(2, 0) = x[0] / sqrt(k1);
+		(*Jhx)(2, 1) = x[1] / sqrt(k1);
+		(*Jhx)(2, 2) = x[2] / sqrt(k1);
+	}
+}
+
+void main(int argc, char* argv[])
+{
+	// dynamics noise covariance matrix
+	// dynamics are deterministic in this homework, so Q = 0
+	Matrix Q(6, 6);
+	Q.setConstant(0.0);
+
+	// observation noise covariance matrix
+	// change the diagonal entries of this if you change noise field in xml model
+	Matrix R(3, 3);
+	R.setIdentity();
+	R(0, 0) = 0.05;
+	R(1, 1) = 0.05;
+	R(2, 2) = 0.30;
+
+	int NIterations = argc > 1 ? atoi(argv[1]) : 60;
+
+	// connect to mujoco server
+	mjInit();
+	mjConnect(10000);
+
+	// load hand model
+	if (mjIsConnected())
+	{
+		mjLoad("estimator.xml");
+		Sleep(1000);  // wait until the load is complete
 	}
 
-	void main(void)
+	if (mjIsConnected() && mjIsModel())
 	{
-		// dynamics noise covariance matrix
-		// dynamics are deterministic in this homework, so Q = 0
-		Matrix Q(6, 6);
-		Q.setConstant(0.0);
+		mjSetMode(2);
 
-		// observation noise covariance matrix
-		// change the diagonal entries of this if you change noise field in xml model
-		Matrix R(3, 3);
-		R.setIdentity();
-		R(0, 0) = 0.05;
-		R(1, 1) = 0.05;
-		R(2, 2) = 0.30;
+		// loops over a series of simulation trials (state is reset between trials)
+		int numHit = 0;
+		int numMiss = 0;
 
-		// connect to mujoco server
-		mjInit();
-		mjConnect(10000);
+		// identity matrix for re-use
+		//
+		Matrix iden(6, 6);
+		iden.setIdentity();
 
-		// load hand model
-		if (mjIsConnected())
+		for (int trial = 0; trial < NUM_TRIAL; trial++)
 		{
-			mjLoad("estimator.xml");
-			Sleep(1000);  // wait until the load is complete
-		}
+			// reset to trial's keyframe
+			mjReset(trial);
 
-		if (mjIsConnected() && mjIsModel())
-		{
-			mjSetMode(2);
+			// estimate of initial state
+			// set xa to something non-informative, but non-zero to prevent singularities
+			Vector xa(6);
+			xa.setConstant(0.0); xa[1] = 1.0;
 
-			// loops over a series of simulation trials (state is reset between trials)
-			int numHit = 0;
-			int numMiss = 0;
+			// noise covarience in initial state estimate
+			Matrix P(6, 6);
 
-			// identity matrix for re-use
-			//
-			Matrix iden(6, 6);
-			iden.setIdentity();
+			// TODO: play with this parameter to see how it affects results
+			double Pdiag = 1e-0;
+			P.setIdentity();
+			P = P * Pdiag;
 
-			for (int trial = 0; trial < NUM_TRIAL; trial++)
+			// use notation similar to tutorial for Pk
+			// 
+			Matrix Pk = P;
+
+			// run simulation until ball hits something
+			for (int k = 0;; k++)
 			{
-				// reset to trial's keyframe
-				mjReset(trial);
+				// noisy sensor measurement
+				Vector z(3, mjGetSensor());
 
-				// estimate of initial state
-				// set xa to something non-informative, but non-zero to prevent singularities
-				Vector xa(6);
-				xa.setConstant(0.0); xa[1] = 1.0;
+				// TODO:
+				// perform your EFK predictor/corrector updates here
+				// you should have xa and P updated after this
 
-				// noise covarience in initial state estimate
-				Matrix P(6, 6);
+				// Model forecast step
+				// 
+				Vector xkf(6);
+				Matrix jfxk(6, 6);
+				f(xa, &xkf, &jfxk);
 
-				// TODO: play with this parameter to see how it affects results
-				double Pdiag = 1e-0;
-				P.setIdentity();
-				P = P * Pdiag;
+				Matrix Pkf(6, 6);
+				Pkf.setConstant(0.0);
+				Pkf = (jfxk * Pk * jfxk.transpose()) + Q;
 
-				Matrix Pk = P;
+				// Data assimilation step
+				// 
+				Matrix kalmanGain_i(6, 6);
+				Vector hxk_i(3);
+				Matrix jhxk_i(6, 6);
+				Vector xk_i = xkf;
+				Vector xk_i_previous = xk_i;
+				double diff = 0.0;
 
-				// run simulation until ball hits something
-				for (int k = 0;; k++)
+				for (int i = 0; i < NIterations; i++)
 				{
-					// noisy sensor measurement
-					Vector z(3, mjGetSensor());
+					h(xk_i, &hxk_i, &jhxk_i);
 
-					double blah = z[0];
-					double blah1 = z[1];
-					double blah2 = z[2];
-
-					// TODO:
-					// perform your EFK predictor/corrector updates here
-					// you should have xa and P updated after this
-
-					// Model forecast step
+					// calculate kalman gain
 					// 
-					Vector xkf(6);
-					Matrix jfxk(6, 6);
-					f(xa, &xkf, &jfxk);
+					kalmanGain_i = Pkf * jhxk_i.transpose() * ((jhxk_i * Pkf * jhxk_i.transpose() + R).inverse());
 
-					Matrix Pkf(6, 6);
-					Pkf.setConstant(0.0);
-					Pkf = (jfxk * Pk * jfxk.transpose()) + Q;
-
-					// Data assimilation step
+					// Update xk_i
 					// 
-					Matrix kalmanGain_i(6, 6);
-					Vector hxk_i(3);
-					Matrix jhxk_i(6, 6);
-					Vector xk_i = xkf;
-					Vector xk_i_previous = xk_i;
-					double diff = 0.0;
+					xk_i = xkf + kalmanGain_i * (z - hxk_i);
 
-					for (int i = 0; i < 40; i++)
+					// Calculate diff (change) from previos xk_i_previous
+					// Stop the loop if the diff (change) is less
+					//
+					diff = (xk_i - xk_i_previous).length();
+
+					// A threshold of 1e-6 used to stop on further iterations
+					// 
+					if (diff < 0.000001)
 					{
-						h(xk_i, &hxk_i, &jhxk_i);
-
-						// calculate kalman gain
-						// 
-						kalmanGain_i = Pkf * jhxk_i.transpose() * ((jhxk_i * Pkf * jhxk_i.transpose() + R).inverse());
-
-						// Update xk_i
-						// 
-						xk_i = xkf + kalmanGain_i * (z - hxk_i);
-
-						// Calculate diff (change) from previos xk_i_previous
-						// Stop the loop if the diff (change) is less
-						//
-						diff = (xk_i - xk_i_previous).length();
-
-						// A threshold of 1e-4 used to stop on further iterations
-						// 
-						if (diff < 0.0001)
-						{
-							break;
-						}
-
-						// update xk_i_previous
-						//
-						xk_i_previous = xk_i;
-					}
-
-					Pk = (iden - (kalmanGain_i * jhxk_i)) * Pkf;
-					xa = xk_i;
-
-					// set estimator location for visualization.
-					// 
-					mjSetEstimator(xa);
-
-					Vector xtarget(2);
-
-					// TODO:
-					// fill xtarget vector here with desired horizonal (entry 0) and
-					// vectical (entry 1) position of the paddle
-					// set controls.
-					// Set xtarget using the positional components of the estimated position xa (for x, z coordinates)
-					// 
-					xtarget[0] = xa[0];
-					xtarget[1] = xa[2];
-
-					mjSetControl(2, xtarget);
-
-					// step simulation forward
-					mjStep();
-					Sleep(1);
-
-					// check for paddle of wall contact to determine scoring
-					// do not modify this
-					mjContact contact = mjGetContacts();
-					if (contact.nc > 0)
-					{
-						printf("trial %02d: %02d ", trial, int(contact.geom1[0]));
-						if (contact.geom1[0] == PADDLE_GEOM)
-						{
-							printf("hit\n");
-							numHit++;
-						}
-						else
-						{
-							printf("miss\n");
-							numMiss++;
-						}
-
-						// run the simulation for one more second to show post-contact result
-						for (int kpost = 0; kpost < int(1.0 / dt); kpost++)
-						{
-							mjStep();
-							Sleep(1);
-						}
-
 						break;
 					}
+
+					// update xk_i_previous
+					//
+					xk_i_previous = xk_i;
+				}
+
+				// update Pk and xa
+				// 
+				Pk = (iden - (kalmanGain_i * jhxk_i)) * Pkf;
+				xa = xk_i;
+
+				// set estimator location for visualization.
+				// 
+				mjSetEstimator(xa);
+
+				Vector xtarget(2);
+
+				// TODO:
+				// fill xtarget vector here with desired horizonal (entry 0) and
+				// vectical (entry 1) position of the paddle
+				// set controls.
+				// Set xtarget using the positional components of the estimated position xa (for x, z coordinates)
+				// 
+				xtarget[0] = xa[0];
+				xtarget[1] = xa[2];
+
+				mjSetControl(2, xtarget);
+
+				// step simulation forward
+				mjStep();
+				Sleep(1);
+
+				// check for paddle of wall contact to determine scoring
+				// do not modify this
+				mjContact contact = mjGetContacts();
+				if (contact.nc > 0)
+				{
+					printf("trial %02d: %02d ", trial, int(contact.geom1[0]));
+					if (contact.geom1[0] == PADDLE_GEOM)
+					{
+						printf("hit\n");
+						numHit++;
+					}
+					else
+					{
+						printf("miss\n");
+						numMiss++;
+					}
+
+					// run the simulation for one more second to show post-contact result
+					for (int kpost = 0; kpost < int(1.0 / dt); kpost++)
+					{
+						mjStep();
+						Sleep(1);
+					}
+
+					break;
 				}
 			}
-			// we will use this to tally your results. Do not remove.
-			printf("hit: %02d miss: %02d\n", numHit, numMiss);
-
-			mjDisconnect();
 		}
-		mjClear();
+		// we will use this to tally your results. Do not remove.
+		printf("hit: %02d miss: %02d\n", numHit, numMiss);
+
+		mjDisconnect();
 	}
+	mjClear();
 }
