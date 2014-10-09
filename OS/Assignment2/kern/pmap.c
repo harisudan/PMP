@@ -178,7 +178,8 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-
+	boot_map_region(kern_pgdir, UPAGES, npages*sizeof(struct PageInfo), PADDR(pages), PTE_U | PTE_P);
+	
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -190,6 +191,8 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
+	boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W | PTE_P);
+	boot_map_region(kern_pgdir, KSTACKTOP-PTSIZE, (KSTKSIZE - PTSIZE), 0, 0);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -199,6 +202,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+	boot_map_region(kern_pgdir, KERNBASE, 2^32, 0, PTE_W | PTE_P);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -334,11 +338,6 @@ page_alloc(int alloc_flags)
 	if (NULL != page_free_list)
 	{
 		pgInfoAllocated = page_free_list;
-		
-		// Get the address of the physical page pointed to by current page_free_list PageInfo* structure
-		// 
-		void* kvaPageAllocated = page2kva(page_free_list);
-		assert(NULL != kvaPageAllocated);
 
 		// Update the free list to reflect this page having been allocated already
 		// and so point to the next free page available.
@@ -347,6 +346,10 @@ page_alloc(int alloc_flags)
 
 		if (alloc_flags & ALLOC_ZERO)
 		{
+			// Get the address of the physical page pointed to by current page_free_list PageInfo* structure
+			// 
+			void* kvaPageAllocated = page2kva(pgInfoAllocated);
+			assert(NULL != kvaPageAllocated);
 			memset(kvaPageAllocated, 0, PGSIZE);
 		}
 	}
@@ -423,11 +426,11 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 	uint32_t* pgDirLocal = pgdir;
 	const void* vaLocal = va;
 
-	int pgDirIndex = PDX(va);
+	uint32_t pgDirIndex = PDX(va);
 
 	// Each entry in page directory is 4 bytes
 	// 
-	uint32_t* pgDirEntry = (uint32_t*)((char *)pgdir + (pgDirIndex * sizeof(char) * 4));
+	uint32_t* pgDirEntry = &pgdir[pgDirIndex];
 
 	// Check if the entry can be used for page translation
 	//
@@ -455,18 +458,12 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 		assert(1 == pPgInfoNewPageTablePage->pp_ref);
 		
 		// Get the physical address of the page containing the new page table
-		//
-		physaddr_t pPhyAddrNewPageTable = page2pa(pPgInfoNewPageTablePage);
-
 		// Set the protection bits on this address
 		// (remember that the low 12 bits of the physical address of a page are always 0)
 		// Set to System Level (U/S) and read/write (R/W = 1) and the present bit to 1
-		//
-		pPhyAddrNewPageTable |= PTE_P | PTE_W | PTE_U;					
-		
 		// Put this in the page table entry in the page directory
 		//
-		*pgDirEntry = pPhyAddrNewPageTable;
+		*pgDirEntry = page2pa(pPgInfoNewPageTablePage) | PTE_P | PTE_W | PTE_U;
 	}
 
  	pte_t *pgtbl_entry = KADDR(PTE_ADDR(*pgDirEntry));
@@ -487,13 +484,26 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-	uintptr_t i = 0;
-	int noOfPagesToMap = (int)(size/PGSIZE);
+	uint32_t i = 0;
+	int j = 0;
+	int k = size;
+	pte_t* pgTabEntry = NULL;
+	int noOfPages = 0;
 
-	for (i = va; i < va + size; i = i + PGSIZE)
+	for (i = 0; i < size; i = i + PGSIZE)
 	{
-		pgdir_walk(pgdir, (const void*)i, 1);
+		j = i;
+		noOfPages++;
+		pgTabEntry = pgdir_walk(pgdir, (void*)(va + i), 1 /*create*/);
+		if (NULL == pgTabEntry)
+		{
+			panic("Could not allocate page table entries");
+		}
+
+		*pgTabEntry = (pa + i) | perm | PTE_P;
 	}
+
+	return;
 }
 
 //
@@ -823,6 +833,8 @@ check_kern_pgdir(void)
 	for (i = 0; i < KSTKSIZE; i += PGSIZE)
 		assert(check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i) == PADDR(bootstack) + i);
 	assert(check_va2pa(pgdir, KSTACKTOP - PTSIZE) == ~0);
+
+	cprintf("Check 1");
 
 	// check PDE permissions
 	for (i = 0; i < NPDENTRIES; i++) {
